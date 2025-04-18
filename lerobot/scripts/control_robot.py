@@ -141,6 +141,7 @@ from dataclasses import asdict
 from pprint import pformat
 
 import rerun as rr
+from typing import Optional
 
 # from safetensors.torch import load_file, save_file
 from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
@@ -245,6 +246,7 @@ def teleoperate(robot: Robot, cfg: TeleoperateControlConfig):
 def record(
     robot: Robot,
     cfg: RecordControlConfig,
+    teleop_step_node: Optional[object] = None,
 ) -> LeRobotDataset:
     # TODO(rcadene): Add option to record logs
     if cfg.resume:
@@ -274,10 +276,22 @@ def record(
     # Load pretrained policy
     policy = None if cfg.policy is None else make_policy(cfg.policy, ds_meta=dataset.meta)
 
-    if not robot.is_connected:
-        robot.connect()
+    if cfg.use_ros:
+        pass
+    else:
+        if not robot.is_connected:
+            robot.connect()
 
     listener, events = init_keyboard_listener()
+
+    should_create_ros = False
+    if cfg.use_ros:
+        should_create_ros = teleop_step_node is None
+        if should_create_ros:
+            import rclpy
+            from data_collector.topic_to_data import DataCollector
+            rclpy.init()
+            teleop_step_node = DataCollector()
 
     # Execute a few seconds without recording to:
     # 1. teleoperate the robot to move it in starting position if no policy provided,
@@ -285,27 +299,46 @@ def record(
     # 3. place the cameras windows on screen
     enable_teleoperation = policy is None
     log_say("Warmup record", cfg.play_sounds)
-    warmup_record(robot, events, enable_teleoperation, cfg.warmup_time_s, cfg.display_data, cfg.fps)
+
+    if cfg.use_ros:
+        pass
+    else:
+        warmup_record(robot, events, enable_teleoperation, cfg.warmup_time_s, cfg.display_data, cfg.fps)
 
     if has_method(robot, "teleop_safety_stop"):
         robot.teleop_safety_stop()
 
     recorded_episodes = 0
+
     while True:
         if recorded_episodes >= cfg.num_episodes:
             break
-
         log_say(f"Recording episode {dataset.num_episodes}", cfg.play_sounds)
-        record_episode(
-            robot=robot,
-            dataset=dataset,
-            events=events,
-            episode_time_s=cfg.episode_time_s,
-            display_data=cfg.display_data,
-            policy=policy,
-            fps=cfg.fps,
-            single_task=cfg.single_task,
-        )
+
+        if cfg.use_ros:
+            record_episode(
+                robot=robot,
+                dataset=dataset,
+                events=events,
+                episode_time_s=cfg.episode_time_s,
+                display_data=cfg.display_data,
+                policy=policy,
+                fps=cfg.fps,
+                single_task=cfg.single_task,
+                teleop_step_node=teleop_step_node
+            )
+        else:
+            record_episode(
+                robot=robot,
+                dataset=dataset,
+                events=events,
+                episode_time_s=cfg.episode_time_s,
+                display_data=cfg.display_data,
+                policy=policy,
+                fps=cfg.fps,
+                single_task=cfg.single_task,
+            )
+
 
         # Execute a few seconds without recording to give time to manually reset the environment
         # Current code logic doesn't allow to teleoperate during this time.
@@ -331,7 +364,11 @@ def record(
             break
 
     log_say("Stop recording", cfg.play_sounds, blocking=True)
-    stop_recording(robot, listener, cfg.display_data)
+
+    if cfg.use_ros:
+        pass
+    else:
+        stop_recording(robot, listener, cfg.display_data)
 
     if cfg.push_to_hub:
         dataset.push_to_hub(tags=cfg.tags, private=cfg.private)

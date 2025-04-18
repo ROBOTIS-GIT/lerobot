@@ -176,6 +176,7 @@ def warmup_record(
     warmup_time_s,
     display_data,
     fps,
+    teleop_step_node=None,
 ):
     control_loop(
         robot=robot,
@@ -184,6 +185,7 @@ def warmup_record(
         events=events,
         fps=fps,
         teleoperate=enable_teleoperation,
+        teleop_step_node=teleop_step_node
     )
 
 
@@ -196,6 +198,7 @@ def record_episode(
     policy,
     fps,
     single_task,
+    teleop_step_node=None,
 ):
     control_loop(
         robot=robot,
@@ -207,6 +210,7 @@ def record_episode(
         fps=fps,
         teleoperate=policy is None,
         single_task=single_task,
+        teleop_step_node=teleop_step_node
     )
 
 
@@ -221,10 +225,14 @@ def control_loop(
     policy: PreTrainedPolicy = None,
     fps: int | None = None,
     single_task: str | None = None,
+    teleop_step_node=None,
 ):
     # TODO(rcadene): Add option to record logs
-    if not robot.is_connected:
-        robot.connect()
+    if teleop_step_node is not None:
+        print(teleop_step_node)
+    else:
+        if not robot.is_connected:
+            robot.connect()
 
     if events is None:
         events = {"exit_early": False}
@@ -246,10 +254,30 @@ def control_loop(
     while timestamp < control_time_s:
         start_loop_t = time.perf_counter()
 
-        if teleoperate:
+        if teleoperate and teleop_step_node is not None:
+            import rclpy
+            rclpy.spin_once(teleop_step_node, timeout_sec=0.05)
+            observation, action = teleop_step_node.get_latest_data()
+            observation = robot.teleop_step_cam(observation)
+            if observation is None or action is None:
+                continue
+
+        elif teleoperate:
             observation, action = robot.teleop_step(record_data=True)
+
         else:
-            observation = robot.capture_observation()
+            if teleop_step_node is not None:
+                import rclpy
+                rclpy.spin_once(teleop_step_node, timeout_sec=0.05)
+                observation, _ = teleop_step_node.get_latest_data()
+                observation = robot.capture_observation_cam()
+                if policy is not None:
+                    pred_action = predict_action(observation, policy, device, use_amp)
+
+                if observation is None or action is None:
+                    continue
+            else:
+                observation = robot.capture_observation()
 
             if policy is not None:
                 pred_action = predict_action(

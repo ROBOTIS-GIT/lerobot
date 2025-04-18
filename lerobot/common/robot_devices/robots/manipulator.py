@@ -165,6 +165,7 @@ class ManipulatorRobot:
         self.follower_arms = make_motors_buses_from_configs(self.config.follower_arms)
         self.cameras = make_cameras_from_configs(self.config.cameras)
         self.is_connected = False
+        self.camera_is_connected = False
         self.logs = {}
 
     def get_motor_names(self, arm: dict[str, MotorsBus]) -> list:
@@ -240,8 +241,10 @@ class ManipulatorRobot:
         for name in self.leader_arms:
             print(f"Connecting {name} leader arm.")
             self.leader_arms[name].connect()
+            # if self.robot_type in ["koch"]:
+            #     self.leader_arms[name].set_bus_baudrate(57600)
 
-        if self.robot_type in ["koch", "koch_bimanual", "aloha"]:
+        if self.robot_type in ["koch", "aloha"]:
             from lerobot.common.robot_devices.motors.dynamixel import TorqueMode
         elif self.robot_type in ["so100", "moss", "lekiwi"]:
             from lerobot.common.robot_devices.motors.feetech import TorqueMode
@@ -253,11 +256,17 @@ class ManipulatorRobot:
         for name in self.leader_arms:
             self.leader_arms[name].write("Torque_Enable", TorqueMode.DISABLED.value)
 
-        self.activate_calibration()
+        # if self.robot_type in ["omx"]:
+        #     pass
+        # else:
+        # self.activate_calibration()
 
         # Set robot preset (e.g. torque in leader gripper for Koch v1.1)
-        if self.robot_type in ["koch", "koch_bimanual"]:
+        if self.robot_type in ["koch"]:
             self.set_koch_robot_preset()
+            pass
+        elif self.robot_type in ["omx", "ffw"]:
+            pass
         elif self.robot_type == "aloha":
             self.set_aloha_robot_preset()
         elif self.robot_type in ["so100", "moss", "lekiwi"]:
@@ -269,7 +278,7 @@ class ManipulatorRobot:
             self.follower_arms[name].write("Torque_Enable", 1)
 
         if self.config.gripper_open_degree is not None:
-            if self.robot_type not in ["koch", "koch_bimanual"]:
+            if self.robot_type not in ["koch"]:
                 raise NotImplementedError(
                     f"{self.robot_type} does not support position AND current control in the handle, which is require to set the gripper open."
                 )
@@ -308,7 +317,7 @@ class ManipulatorRobot:
                 # TODO(rcadene): display a warning in __init__ if calibration file not available
                 print(f"Missing calibration file '{arm_calib_path}'")
 
-                if self.robot_type in ["koch", "koch_bimanual", "aloha"]:
+                if self.robot_type in ["koch", "aloha"]:
                     from lerobot.common.robot_devices.robots.dynamixel_calibration import run_arm_calibration
 
                     calibration = run_arm_calibration(arm, self.robot_type, name, arm_type)
@@ -363,9 +372,15 @@ class ManipulatorRobot:
 
             # Set better PID values to close the gap between recorded states and actions
             # TODO(rcadene): Implement an automatic procedure to set optimal PID values for each motor
-            self.follower_arms[name].write("Position_P_Gain", 1500, "elbow_flex")
-            self.follower_arms[name].write("Position_I_Gain", 0, "elbow_flex")
-            self.follower_arms[name].write("Position_D_Gain", 600, "elbow_flex")
+            # self.follower_arms[name].write("Position_P_Gain", 1500, "elbow_flex")
+            # self.follower_arms[name].write("Position_I_Gain", 0, "elbow_flex")
+            # self.follower_arms[name].write("Position_D_Gain", 600, "elbow_flex")
+
+            joints = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex"]
+            # joints = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"]
+            for joint in joints:
+                self.follower_arms[name].write("Profile_Acceleration", 11, joint)
+                self.follower_arms[name].write("Profile_Velocity", 200, joint)
 
         if self.config.gripper_open_degree is not None:
             for name in self.leader_arms:
@@ -522,6 +537,29 @@ class ManipulatorRobot:
             obs_dict[f"observation.images.{name}"] = images[name]
 
         return obs_dict, action_dict
+
+    def teleop_step_cam(self, observation):
+        if observation is None:
+            return observation
+        
+        if not self.camera_is_connected:
+            for name in self.cameras:
+                self.cameras[name].connect()
+                self.camera_is_connected = True
+        
+        images = {}
+        for name in self.cameras:
+            before_camread_t = time.perf_counter()
+            images[name] = self.cameras[name].async_read()
+            images[name] = torch.from_numpy(images[name])
+            self.logs[f"read_camera_{name}_dt_s"] = self.cameras[name].logs["delta_timestamp_s"]
+            self.logs[f"async_read_camera_{name}_dt_s"] = time.perf_counter() - before_camread_t
+        
+        for name in self.cameras:
+            observation[f"observation.images.{name}"] = images[name]
+
+        return observation
+        
 
     def capture_observation(self):
         """The returned observations do not have a batch dimension."""

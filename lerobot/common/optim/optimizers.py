@@ -81,7 +81,7 @@ class AdamWConfig(OptimizerConfig):
 @OptimizerConfig.register_subclass("sgd")
 @dataclass
 class SGDConfig(OptimizerConfig):
-    lr: float = 1e-3
+    lr: float = 1e-5
     momentum: float = 0.0
     dampening: float = 0.0
     nesterov: bool = False

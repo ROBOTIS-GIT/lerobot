@@ -211,7 +211,7 @@ class AlohaRobotConfig(ManipulatorRobotConfig):
 @RobotConfig.register_subclass("koch")
 @dataclass
 class KochRobotConfig(ManipulatorRobotConfig):
-    calibration_dir: str = ".cache/calibration/koch"
+    calibration_dir: str = "/home/ai/robotis_ws/src/open_platform_ai/lerobot/.cache/calibration/omx"
     # `max_relative_target` limits the magnitude of the relative positional target vector for safety purposes.
     # Set this to a positive scalar to have the same value for all motors, or a list that is the same length as
     # the number of motors in your follower arms.
@@ -220,15 +220,14 @@ class KochRobotConfig(ManipulatorRobotConfig):
     leader_arms: dict[str, MotorsBusConfig] = field(
         default_factory=lambda: {
             "main": DynamixelMotorsBusConfig(
-                port="/dev/tty.usbmodem585A0085511",
+                port="/dev/ttyACM0",
                 motors={
                     # name: (index, model)
-                    "shoulder_pan": [1, "xl330-m077"],
-                    "shoulder_lift": [2, "xl330-m077"],
-                    "elbow_flex": [3, "xl330-m077"],
-                    "wrist_flex": [4, "xl330-m077"],
-                    "wrist_roll": [5, "xl330-m077"],
-                    "gripper": [6, "xl330-m077"],
+                    "shoulder_pan": (1, "xl330-m288"),
+                    "shoulder_lift": (2, "xl330-m288"),
+                    "elbow_flex": (3, "xl330-m288"),
+                    "wrist_flex": (4, "xl330-m288"),
+                    "gripper": (5, "xl330-m288"),
                 },
             ),
         }
@@ -237,15 +236,14 @@ class KochRobotConfig(ManipulatorRobotConfig):
     follower_arms: dict[str, MotorsBusConfig] = field(
         default_factory=lambda: {
             "main": DynamixelMotorsBusConfig(
-                port="/dev/tty.usbmodem585A0076891",
+                port="/dev/ttyUSB0",
                 motors={
                     # name: (index, model)
-                    "shoulder_pan": [1, "xl430-w250"],
-                    "shoulder_lift": [2, "xl430-w250"],
-                    "elbow_flex": [3, "xl330-m288"],
-                    "wrist_flex": [4, "xl330-m288"],
-                    "wrist_roll": [5, "xl330-m288"],
-                    "gripper": [6, "xl330-m288"],
+                    "shoulder_pan": (11, "xm430-w350"),
+                    "shoulder_lift": (12, "xm430-w350"),
+                    "elbow_flex": (13, "xm430-w350"),
+                    "wrist_flex": (14, "xm430-w350"),
+                    "gripper": (15, "xm430-w350"),
                 },
             ),
         }
@@ -253,14 +251,14 @@ class KochRobotConfig(ManipulatorRobotConfig):
 
     cameras: dict[str, CameraConfig] = field(
         default_factory=lambda: {
-            "laptop": OpenCVCameraConfig(
-                camera_index=0,
+            "cam_1": OpenCVCameraConfig(
+                camera_index=4,
                 fps=30,
                 width=640,
                 height=480,
             ),
-            "phone": OpenCVCameraConfig(
-                camera_index=1,
+            "cam_2": OpenCVCameraConfig(
+                camera_index=6,
                 fps=30,
                 width=640,
                 height=480,
@@ -271,15 +269,15 @@ class KochRobotConfig(ManipulatorRobotConfig):
     # ~ Koch specific settings ~
     # Sets the leader arm in torque mode with the gripper motor set to this angle. This makes it possible
     # to squeeze the gripper and have it spring back to an open position on its own.
-    gripper_open_degree: float = 35.156
+    # gripper_open_degree: float = 35.156
 
     mock: bool = False
 
 
-@RobotConfig.register_subclass("koch_bimanual")
+@RobotConfig.register_subclass("omx")
 @dataclass
-class KochBimanualRobotConfig(ManipulatorRobotConfig):
-    calibration_dir: str = ".cache/calibration/koch_bimanual"
+class OMXRobotConfig(ManipulatorRobotConfig):
+    calibration_dir: str = "/home/ai/robotis_ws/src/lerobot_package/.cache/calibration/omx"
     # `max_relative_target` limits the magnitude of the relative positional target vector for safety purposes.
     # Set this to a positive scalar to have the same value for all motors, or a list that is the same length as
     # the number of motors in your follower arms.
@@ -287,28 +285,15 @@ class KochBimanualRobotConfig(ManipulatorRobotConfig):
 
     leader_arms: dict[str, MotorsBusConfig] = field(
         default_factory=lambda: {
-            "left": DynamixelMotorsBusConfig(
-                port="/dev/tty.usbmodem585A0085511",
+            "main": DynamixelMotorsBusConfig(
+                port="/dev/ttyACM0",
                 motors={
                     # name: (index, model)
-                    "shoulder_pan": [1, "xl330-m077"],
-                    "shoulder_lift": [2, "xl330-m077"],
-                    "elbow_flex": [3, "xl330-m077"],
-                    "wrist_flex": [4, "xl330-m077"],
-                    "wrist_roll": [5, "xl330-m077"],
-                    "gripper": [6, "xl330-m077"],
-                },
-            ),
-            "right": DynamixelMotorsBusConfig(
-                port="/dev/tty.usbmodem575E0031751",
-                motors={
-                    # name: (index, model)
-                    "shoulder_pan": [1, "xl330-m077"],
-                    "shoulder_lift": [2, "xl330-m077"],
-                    "elbow_flex": [3, "xl330-m077"],
-                    "wrist_flex": [4, "xl330-m077"],
-                    "wrist_roll": [5, "xl330-m077"],
-                    "gripper": [6, "xl330-m077"],
+                    "shoulder_pan": (1, "xm430-w350"),
+                    "shoulder_lift": (2, "xm430-w350"),
+                    "elbow_flex": (3, "xm430-w350"),
+                    "wrist_flex": (4, "xm430-w350"),
+                    "gripper": (5, "xm430-w350"),
                 },
             ),
         }
@@ -316,28 +301,15 @@ class KochBimanualRobotConfig(ManipulatorRobotConfig):
 
     follower_arms: dict[str, MotorsBusConfig] = field(
         default_factory=lambda: {
-            "left": DynamixelMotorsBusConfig(
-                port="/dev/tty.usbmodem585A0076891",
+            "main": DynamixelMotorsBusConfig(
+                port="/dev/ttyUSB0",
                 motors={
                     # name: (index, model)
-                    "shoulder_pan": [1, "xl430-w250"],
-                    "shoulder_lift": [2, "xl430-w250"],
-                    "elbow_flex": [3, "xl330-m288"],
-                    "wrist_flex": [4, "xl330-m288"],
-                    "wrist_roll": [5, "xl330-m288"],
-                    "gripper": [6, "xl330-m288"],
-                },
-            ),
-            "right": DynamixelMotorsBusConfig(
-                port="/dev/tty.usbmodem575E0032081",
-                motors={
-                    # name: (index, model)
-                    "shoulder_pan": [1, "xl430-w250"],
-                    "shoulder_lift": [2, "xl430-w250"],
-                    "elbow_flex": [3, "xl330-m288"],
-                    "wrist_flex": [4, "xl330-m288"],
-                    "wrist_roll": [5, "xl330-m288"],
-                    "gripper": [6, "xl330-m288"],
+                    "shoulder_pan": (11, "xm430-w350"),
+                    "shoulder_lift": (12, "xm430-w350"),
+                    "elbow_flex": (13, "xm430-w350"),
+                    "wrist_flex": (14, "xm430-w350"),
+                    "gripper": (15, "xm430-w350"),
                 },
             ),
         }
@@ -345,14 +317,14 @@ class KochBimanualRobotConfig(ManipulatorRobotConfig):
 
     cameras: dict[str, CameraConfig] = field(
         default_factory=lambda: {
-            "laptop": OpenCVCameraConfig(
-                camera_index=0,
+            "cam_1": OpenCVCameraConfig(
+                camera_index=4,
                 fps=30,
                 width=640,
                 height=480,
             ),
-            "phone": OpenCVCameraConfig(
-                camera_index=1,
+            "cam_2": OpenCVCameraConfig(
+                camera_index=6,
                 fps=30,
                 width=640,
                 height=480,
@@ -360,13 +332,152 @@ class KochBimanualRobotConfig(ManipulatorRobotConfig):
         }
     )
 
-    # ~ Koch specific settings ~
-    # Sets the leader arm in torque mode with the gripper motor set to this angle. This makes it possible
-    # to squeeze the gripper and have it spring back to an open position on its own.
-    gripper_open_degree: float = 35.156
-
     mock: bool = False
 
+
+@RobotConfig.register_subclass("ffw")
+@dataclass
+class FFWRobotConfig(ManipulatorRobotConfig):
+    calibration_dir: str = "/home/ai/robotis_ws/src/lerobot_package/.cache/calibration/ffw"
+    # `max_relative_target` limits the magnitude of the relative positional target vector for safety purposes.
+    # Set this to a positive scalar to have the same value for all motors, or a list that is the same length as
+    # the number of motors in your follower arms.
+    max_relative_target: int | None = None
+
+    leader_arms: dict[str, MotorsBusConfig] = field(
+        default_factory=lambda: {
+            "hand_right": DynamixelMotorsBusConfig(
+                port="/dev/ttyleader_right",
+                motors={
+                    # name: (index, model)
+                    "thumb_1": [1, "xm430-w350"],
+                    "thumb_2": [2, "xm430-w350"],
+                    "index": [3, "xm430-w350"],
+                    "middle": [4, "xm430-w350"],
+                    "ring": [5, "xm430-w350"],
+                    "little": [6, "xm430-w350"],
+                },
+            ),
+            "hand_left": DynamixelMotorsBusConfig(
+                port="/dev/ttyleader_left",
+                motors={
+                    # name: (index, model)
+                    "thumb_1": [1, "xm430-w350"],
+                    "thumb_2": [2, "xm430-w350"],
+                    "index": [3, "xm430-w350"],
+                    "middle": [4, "xm430-w350"],
+                    "ring": [5, "xm430-w350"],
+                    "little": [6, "xm430-w350"],
+                },
+            ),
+            "arm_right": DynamixelMotorsBusConfig(
+                port="/dev/ttyleader_right",
+                motors={
+                    # name: (index, model)
+                    "waist": [1, "xm430-w350"],
+                    "shoulder": [2, "xm430-w350"],
+                    "shoulder_shadow": [3, "xm430-w350"],
+                    "elbow": [4, "xm430-w350"],
+                    "elbow_shadow": [5, "xm430-w350"],
+                    "forearm_roll": [6, "xm430-w350"],
+                    "wrist_angle": [7, "xm430-w350"],
+                },
+            ),
+            "arm_left": DynamixelMotorsBusConfig(
+                port="/dev/ttyleader_left",
+                motors={
+                    # name: (index, model)
+                    "waist": [1, "xm430-w350"],
+                    "shoulder": [2, "xm430-w350"],
+                    "shoulder_shadow": [3, "xm430-w350"],
+                    "elbow": [4, "xm430-w350"],
+                    "elbow_shadow": [5, "xm430-w350"],
+                    "forearm_roll": [6, "xm430-w350"],
+                    "wrist_angle": [7, "xm430-w350"]
+                },
+            ),
+        }
+    )
+
+    follower_arms: dict[str, MotorsBusConfig] = field(
+        default_factory=lambda: {
+            "hand_right": DynamixelMotorsBusConfig(
+                port="/dev/ttyfollower_right",
+                motors={
+                    # name: (index, model)
+                    "thumb_1": [1, "xm430-w350"],
+                    "thumb_2": [2, "xm430-w350"],
+                    "index": [3, "xm430-w350"],
+                    "middle": [4, "xm430-w350"],
+                    "ring": [5, "xm430-w350"],
+                    "little": [6, "xm430-w350"],
+                },
+            ),
+            "hand_left": DynamixelMotorsBusConfig(
+                port="/dev/ttyfollower_left",
+                motors={
+                    # name: (index, model)
+                    "thumb_1": [1, "xm430-w350"],
+                    "thumb_2": [2, "xm430-w350"],
+                    "index": [3, "xm430-w350"],
+                    "middle": [4, "xm430-w350"],
+                    "ring": [5, "xm430-w350"],
+                    "little": [6, "xm430-w350"],
+                },
+            ),
+            "arm_right": DynamixelMotorsBusConfig(
+                port="/dev/ttyfollower_right",
+                motors={
+                    # name: (index, model)
+                    "waist": [1, "xm430-w350"],
+                    "shoulder": [2, "xm430-w350"],
+                    "shoulder_shadow": [3, "xm430-w350"],
+                    "elbow": [4, "xm430-w350"],
+                    "elbow_shadow": [5, "xm430-w350"],
+                    "forearm_roll": [6, "xm430-w350"],
+                    "wrist_angle": [7, "xm430-w350"],
+                },
+            ),
+            "arm_left": DynamixelMotorsBusConfig(
+                port="/dev/ttyfollower_left",
+                motors={
+                    # name: (index, model)
+                    "waist": [1, "xm430-w350"],
+                    "shoulder": [2, "xm430-w350"],
+                    "shoulder_shadow": [3, "xm430-w350"],
+                    "elbow": [4, "xm430-w350"],
+                    "elbow_shadow": [5, "xm430-w350"],
+                    "forearm_roll": [6, "xm430-w350"],
+                    "wrist_angle": [7, "xm430-w350"]
+                },
+            ),
+        }
+    )
+
+    cameras: dict[str, CameraConfig] = field(
+        default_factory=lambda: {
+            "cam_head": OpenCVCameraConfig(
+                camera_index=4,
+                fps=30,
+                width=640,
+                height=480,
+            ),
+            "cam_wrist_1": OpenCVCameraConfig(
+                camera_index=6,
+                fps=30,
+                width=640,
+                height=480,
+            ),
+            "cam_wrist_2": OpenCVCameraConfig(
+                camera_index=8,
+                fps=30,
+                width=640,
+                height=480,
+            ),
+        }
+    )
+
+    mock: bool = False
 
 @RobotConfig.register_subclass("moss")
 @dataclass
