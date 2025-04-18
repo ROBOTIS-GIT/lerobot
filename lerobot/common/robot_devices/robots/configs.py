@@ -381,6 +381,7 @@ class FFWRobotConfig(ManipulatorRobotConfig):
                     "elbow_shadow": [5, "xm430-w350"],
                     "forearm_roll": [6, "xm430-w350"],
                     "wrist_angle": [7, "xm430-w350"],
+                    "gripper": [8, "xm430-w350"],
                 },
             ),
             "arm_left": DynamixelMotorsBusConfig(
@@ -393,7 +394,8 @@ class FFWRobotConfig(ManipulatorRobotConfig):
                     "elbow": [4, "xm430-w350"],
                     "elbow_shadow": [5, "xm430-w350"],
                     "forearm_roll": [6, "xm430-w350"],
-                    "wrist_angle": [7, "xm430-w350"]
+                    "wrist_angle": [7, "xm430-w350"],
+                    "gripper": [8, "xm430-w350"],
                 },
             ),
         }
@@ -436,6 +438,7 @@ class FFWRobotConfig(ManipulatorRobotConfig):
                     "elbow_shadow": [5, "xm430-w350"],
                     "forearm_roll": [6, "xm430-w350"],
                     "wrist_angle": [7, "xm430-w350"],
+                    "gripper": [8, "xm430-w350"],
                 },
             ),
             "arm_left": DynamixelMotorsBusConfig(
@@ -448,7 +451,8 @@ class FFWRobotConfig(ManipulatorRobotConfig):
                     "elbow": [4, "xm430-w350"],
                     "elbow_shadow": [5, "xm430-w350"],
                     "forearm_roll": [6, "xm430-w350"],
-                    "wrist_angle": [7, "xm430-w350"]
+                    "wrist_angle": [7, "xm430-w350"],
+                    "gripper": [8, "xm430-w350"],
                 },
             ),
         }
@@ -457,19 +461,19 @@ class FFWRobotConfig(ManipulatorRobotConfig):
     cameras: dict[str, CameraConfig] = field(
         default_factory=lambda: {
             "cam_head": OpenCVCameraConfig(
-                camera_index=4,
+                camera_index=16,
                 fps=30,
                 width=640,
                 height=480,
             ),
             "cam_wrist_1": OpenCVCameraConfig(
-                camera_index=6,
+                camera_index=4,
                 fps=30,
                 width=640,
                 height=480,
             ),
             "cam_wrist_2": OpenCVCameraConfig(
-                camera_index=8,
+                camera_index=10,
                 fps=30,
                 width=640,
                 height=480,

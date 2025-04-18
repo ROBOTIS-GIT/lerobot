@@ -639,6 +639,19 @@ class ManipulatorRobot:
 
         return torch.cat(action_sent)
 
+    def pred_to_action(self, action: torch.Tensor) -> torch.Tensor:
+        from_idx = 0
+        to_idx = 0
+        action_sent = []
+        for name in self.follower_arms:
+            to_idx += len(self.follower_arms[name].motor_names)
+            goal_pos = action[from_idx:to_idx]
+            from_idx = to_idx
+
+            action_sent.append(goal_pos)
+
+        return torch.cat(action_sent)
+
     def print_logs(self):
         pass
         # TODO(aliberts): move robot-specific logs logic here

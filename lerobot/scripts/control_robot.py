@@ -247,6 +247,8 @@ def record(
     robot: Robot,
     cfg: RecordControlConfig,
     teleop_step_node: Optional[object] = None,
+    observation_node: Optional[object] = None,
+    action_trajectory_node: Optional[object] = None,
 ) -> LeRobotDataset:
     # TODO(rcadene): Add option to record logs
     if cfg.resume:
@@ -283,16 +285,31 @@ def record(
             robot.connect()
 
     listener, events = init_keyboard_listener()
-
-    should_create_ros = False
+    
+    # should_create_ros = False
     if cfg.use_ros:
-        should_create_ros = teleop_step_node is None
-        if should_create_ros:
+        # should_create_ros = teleop_step_node is None
+        # if should_create_ros:
+        if cfg.policy is None:
             import rclpy
-            from data_collector.topic_to_data import DataCollector
+            if robot.robot_type == 'omx':
+                from data_collector.topic_to_data_omx import DataCollector
+            elif robot.robot_type == 'ffw':
+                from data_collector.topic_to_data import DataCollector
             rclpy.init()
             teleop_step_node = DataCollector()
-
+        else:
+            import rclpy
+            if robot.robot_type == 'omx':
+                from policy_to_trajectory.action_to_trajectory_omx import PolicyTrajectory
+                from policy_to_trajectory.topic_to_observation_omx import ObservationCollector
+            elif robot.robot_type == 'ffw':
+                from policy_to_trajectory.action_to_trajectory import PolicyTrajectory
+                from policy_to_trajectory.topic_to_observation import ObservationCollector
+            rclpy.init()
+            observation_node = ObservationCollector()
+            action_trajectory_node = PolicyTrajectory()
+ 
     # Execute a few seconds without recording to:
     # 1. teleoperate the robot to move it in starting position if no policy provided,
     # 2. give times to the robot devices to connect and start synchronizing,
@@ -325,7 +342,9 @@ def record(
                 policy=policy,
                 fps=cfg.fps,
                 single_task=cfg.single_task,
-                teleop_step_node=teleop_step_node
+                teleop_step_node=teleop_step_node,
+                observation_node=observation_node,
+                action_trajectory_node=action_trajectory_node,
             )
         else:
             record_episode(

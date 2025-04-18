@@ -216,8 +216,9 @@ class ACTTemporalEnsembler:
         print("online", avg)
         ```
         """
-        self.chunk_size = chunk_size
-        self.ensemble_weights = torch.exp(-temporal_ensemble_coeff * torch.arange(chunk_size))
+        # self.chunk_size = chunk_size
+        self.chunk_size = 60  ###
+        self.ensemble_weights = torch.exp(-temporal_ensemble_coeff * torch.arange(self.chunk_size))
         self.ensemble_weights_cumsum = torch.cumsum(self.ensemble_weights, dim=0)
         self.reset()
 
@@ -237,7 +238,8 @@ class ACTTemporalEnsembler:
         if self.ensembled_actions is None:
             # Initializes `self._ensembled_action` to the sequence of actions predicted during the first
             # time step of the episode.
-            self.ensembled_actions = actions.clone()
+            # self.ensembled_actions = actions.clone()
+            self.ensembled_actions = actions[:, 40:].clone()  ####
             # Note: The last dimension is unsqueeze to make sure we can broadcast properly for tensor
             # operations later.
             self.ensembled_actions_count = torch.ones(
@@ -247,7 +249,8 @@ class ACTTemporalEnsembler:
             # self.ensembled_actions will have shape (batch_size, chunk_size - 1, action_dim). Compute
             # the online update for those entries.
             self.ensembled_actions *= self.ensemble_weights_cumsum[self.ensembled_actions_count - 1]
-            self.ensembled_actions += actions[:, :-1] * self.ensemble_weights[self.ensembled_actions_count]
+            # self.ensembled_actions += actions[:, :-1] * self.ensemble_weights[self.ensembled_actions_count]
+            self.ensembled_actions += actions[:, 40:-1] * self.ensemble_weights[self.ensembled_actions_count]  ####
             self.ensembled_actions /= self.ensemble_weights_cumsum[self.ensembled_actions_count]
             self.ensembled_actions_count = torch.clamp(self.ensembled_actions_count + 1, max=self.chunk_size)
             # The last action, which has no prior online average, needs to get concatenated onto the end.
