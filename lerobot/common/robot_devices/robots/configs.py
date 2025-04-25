@@ -318,7 +318,7 @@ class OMXRobotConfig(ManipulatorRobotConfig):
     cameras: dict[str, CameraConfig] = field(
         default_factory=lambda: {
             "cam_1": OpenCVCameraConfig(
-                camera_index=4,
+                camera_index=,
                 fps=30,
                 width=640,
                 height=480,
