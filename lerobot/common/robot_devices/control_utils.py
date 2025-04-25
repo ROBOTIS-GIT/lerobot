@@ -233,13 +233,6 @@ def control_loop(
     observation_node=None,
     action_trajectory_node=None,
 ):
-    # TODO(rcadene): Add option to record logs
-    if teleop_step_node is not None or observation_node is not None:
-        print(teleop_step_node)
-        print(observation_node)
-    else:
-        if not robot.is_connected:
-            robot.connect()
 
     if events is None:
         events = {"exit_early": False}
@@ -271,9 +264,6 @@ def control_loop(
             if observation is None or action is None:
                 continue
 
-        elif teleoperate:
-            observation, action = robot.teleop_step(record_data=True)
-
         elif policy is not None:
             if observation_node is not None:
                 import rclpy
@@ -286,18 +276,6 @@ def control_loop(
                 action_tensor = robot.pred_to_action(pred_action)
                 action_trajectory_node.publish_action(action_tensor)
                 action = {"action": action_tensor}
-
-            else:
-                observation = robot.capture_observation()
-
-            if policy is not None:
-                pred_action = predict_action(
-                    observation, policy, get_safe_torch_device(policy.config.device), policy.config.use_amp
-                )
-                # Action can eventually be clipped using `max_relative_target`,
-                # so action actually sent is saved in the dataset.
-                action = robot.send_action(pred_action)
-                action = {"action": action}
 
         if dataset is not None:
             frame = {**observation, **action, "task": single_task}
@@ -336,7 +314,6 @@ def reset_environment(robot, events, reset_time_s, fps):
         control_time_s=reset_time_s,
         events=events,
         fps=fps,
-        teleoperate=True,
     )
 
 
