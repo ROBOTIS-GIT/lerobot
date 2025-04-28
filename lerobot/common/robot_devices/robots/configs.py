@@ -318,7 +318,7 @@ class OMXRobotConfig(ManipulatorRobotConfig):
     cameras: dict[str, CameraConfig] = field(
         default_factory=lambda: {
             "cam_1": OpenCVCameraConfig(
-                camera_index=2,
+                camera_index=4,
                 fps=30,
                 width=640,
                 height=480,
@@ -337,33 +337,8 @@ class FFWRobotConfig(ManipulatorRobotConfig):
     # Set this to a positive scalar to have the same value for all motors, or a list that is the same length as
     # the number of motors in your follower arms.
     max_relative_target: int | None = None
-
     leader_arms: dict[str, MotorsBusConfig] = field(
         default_factory=lambda: {
-            "hand_right": DynamixelMotorsBusConfig(
-                port="/dev/ttyleader_right",
-                motors={
-                    # name: (index, model)
-                    "thumb_1": [1, "xm430-w350"],
-                    "thumb_2": [2, "xm430-w350"],
-                    "index": [3, "xm430-w350"],
-                    "middle": [4, "xm430-w350"],
-                    "ring": [5, "xm430-w350"],
-                    "little": [6, "xm430-w350"],
-                },
-            ),
-            "hand_left": DynamixelMotorsBusConfig(
-                port="/dev/ttyleader_left",
-                motors={
-                    # name: (index, model)
-                    "thumb_1": [1, "xm430-w350"],
-                    "thumb_2": [2, "xm430-w350"],
-                    "index": [3, "xm430-w350"],
-                    "middle": [4, "xm430-w350"],
-                    "ring": [5, "xm430-w350"],
-                    "little": [6, "xm430-w350"],
-                },
-            ),
             "arm_right": DynamixelMotorsBusConfig(
                 port="/dev/ttyleader_right",
                 motors={
@@ -394,33 +369,8 @@ class FFWRobotConfig(ManipulatorRobotConfig):
             ),
         }
     )
-
     follower_arms: dict[str, MotorsBusConfig] = field(
         default_factory=lambda: {
-            "hand_right": DynamixelMotorsBusConfig(
-                port="/dev/ttyfollower_right",
-                motors={
-                    # name: (index, model)
-                    "thumb_1": [1, "xm430-w350"],
-                    "thumb_2": [2, "xm430-w350"],
-                    "index": [3, "xm430-w350"],
-                    "middle": [4, "xm430-w350"],
-                    "ring": [5, "xm430-w350"],
-                    "little": [6, "xm430-w350"],
-                },
-            ),
-            "hand_left": DynamixelMotorsBusConfig(
-                port="/dev/ttyfollower_left",
-                motors={
-                    # name: (index, model)
-                    "thumb_1": [1, "xm430-w350"],
-                    "thumb_2": [2, "xm430-w350"],
-                    "index": [3, "xm430-w350"],
-                    "middle": [4, "xm430-w350"],
-                    "ring": [5, "xm430-w350"],
-                    "little": [6, "xm430-w350"],
-                },
-            ),
             "arm_right": DynamixelMotorsBusConfig(
                 port="/dev/ttyfollower_right",
                 motors={
@@ -451,7 +401,6 @@ class FFWRobotConfig(ManipulatorRobotConfig):
             ),
         }
     )
-
     cameras: dict[str, CameraConfig] = field(
         default_factory=lambda: {
             "cam_head": OpenCVCameraConfig(
@@ -474,7 +423,6 @@ class FFWRobotConfig(ManipulatorRobotConfig):
             ),
         }
     )
-
     mock: bool = False
 
 @RobotConfig.register_subclass("moss")
