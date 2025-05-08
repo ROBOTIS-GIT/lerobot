@@ -403,20 +403,38 @@ class FFWRobotConfig(ManipulatorRobotConfig):
     )
     cameras: dict[str, CameraConfig] = field(
         default_factory=lambda: {
-            "cam_head": OpenCVCameraConfig(
-                camera_index=16,
+            # "cam_head": OpenCVCameraConfig(
+            #     camera_index=16,
+            #     fps=30,
+            #     width=640,
+            #     height=480,
+            # ),
+            # "cam_wrist_1": OpenCVCameraConfig(
+            #     camera_index=4,
+            #     fps=30,
+            #     width=640,
+            #     height=480,
+            # ),
+            # "cam_wrist_2": OpenCVCameraConfig(
+            #     camera_index=10,
+            #     fps=30,
+            #     width=640,
+            #     height=480,
+            # ),
+            "cam_head": IntelRealSenseCameraConfig(
+                serial_number='049522250475',
                 fps=30,
                 width=640,
                 height=480,
             ),
-            "cam_wrist_1": OpenCVCameraConfig(
-                camera_index=4,
+            "cam_wrist_1": IntelRealSenseCameraConfig(
+                serial_number='218622271442',
                 fps=30,
                 width=640,
                 height=480,
             ),
-            "cam_wrist_2": OpenCVCameraConfig(
-                camera_index=10,
+            "cam_wrist_2": IntelRealSenseCameraConfig(
+                serial_number='218622275723',
                 fps=30,
                 width=640,
                 height=480,
