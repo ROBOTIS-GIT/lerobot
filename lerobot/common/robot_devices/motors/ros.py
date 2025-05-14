@@ -29,8 +29,20 @@ from lerobot.common.utils.utils import capture_timestamp_utc
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
-from trajectory_msgs.msg import JointTrajectory
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 import uuid
+
+class JointTrajectoryPublisher(Node):
+    def __init__(self, topic_name, node_name=None):
+        if node_name is None:
+            node_name = f"joint_trajectory_publisher_{uuid.uuid4().hex[:8]}"
+        super().__init__(node_name)
+        
+        self.publisher = self.create_publisher(JointTrajectory, topic_name, 10)
+
+    def publish(self, joint_trajectory: JointTrajectory):
+        self.publisher.publish(joint_trajectory)
+
 
 class JointStatesSubscriber(Node):
     def __init__(self, callback, topic_name="/joint_states", node_name=None):
@@ -57,6 +69,7 @@ class JointStatesSubscriber(Node):
 
         self.callback(joint_data)
 
+
 class JointTrajectorySubscriber(Node):
     def __init__(self, callback, topic_name="/joint_trajectory", node_name=None):
         if node_name is None:
@@ -79,8 +92,8 @@ class JointTrajectorySubscriber(Node):
         joint_data = {
             "name": list(msg.joint_names),
             "position": np.array(point.positions) if point.positions else np.zeros(len(msg.joint_names)),
-            # "velocity": np.array(point.velocities) if point.velocities else np.zeros(len(msg.joint_names)),
-            # "effort": np.array(point.effort) if point.effort else np.zeros(len(msg.joint_names)),
+            "velocity": np.array(point.velocities) if point.velocities else np.zeros(len(msg.joint_names)),
+            "effort": np.array(point.effort) if point.effort else np.zeros(len(msg.joint_names)),
             "timestamp_utc": capture_timestamp_utc(),
         }
         self.callback(joint_data)
@@ -131,11 +144,16 @@ class RosMotorsBus:
 
         self.topic_name = config.topic_name
         self.topic_type = config.topic_type
-
+        self.action_topic_name = config.action_topic_name
+        
         self.is_connected = True
         self.logs = {}
         self.latest_joint_state = None  # Initialize as empty dict
-        self._ros_node = None
+        self._ros_subscriber_node = None
+        self._ros_publisher_node = None
+        self._ros_nodes = [self._ros_subscriber_node]
+        if self.action_topic_name is not None:
+            self._ros_nodes.append(self._ros_publisher_node)
 
     def _wait_for_joint_state(self):
         while self.latest_joint_state is None:
@@ -150,11 +168,14 @@ class RosMotorsBus:
     def _run_ros_node(self):
         # Create the node but do not spin it
         if self.topic_type is JointState:
-            self._ros_node = JointStatesSubscriber(self._joint_callback, topic_name=self.topic_name)
+            self._ros_subscriber_node = JointStatesSubscriber(self._joint_callback, topic_name=self.topic_name)
         elif self.topic_type is JointTrajectory:
-            self._ros_node = JointTrajectorySubscriber(self._joint_callback, topic_name=self.topic_name)
+            self._ros_subscriber_node = JointTrajectorySubscriber(self._joint_callback, topic_name=self.topic_name)
         else:
             raise ValueError(f"Unknown topic type: {self.topic_type}")
+        
+        if self.action_topic_name is not None:
+            self._ros_publisher_node = JointTrajectoryPublisher(self.action_topic_name)
 
     def _joint_callback(self, joint_data: dict):
         timestamp = joint_data["timestamp_utc"]
@@ -164,7 +185,10 @@ class RosMotorsBus:
                 idx = joint_name_to_index[name]
                 if self.latest_joint_state is None:
                     self.latest_joint_state = {}
-                self.latest_joint_state[name] = joint_data["position"][idx]
+                self.latest_joint_state[name] = {
+                    "position": joint_data["position"][idx],
+                    "velocity": joint_data["velocity"][idx]
+                }
                 self.logs[f"timestamp_utc_{name}"] = timestamp
 
     def read(self, data_name, motor_names: str | list[str] | None = None):
@@ -184,7 +208,12 @@ class RosMotorsBus:
             if ros_joint_name not in self.latest_joint_state:
                 raise ValueError(f"No joint state received for {ros_joint_name}")
 
-            values.append(self.latest_joint_state[ros_joint_name])
+            if data_name == "Present_Position":
+                values.append(self.latest_joint_state[ros_joint_name]["position"])
+            elif data_name == "Present_Velocity":
+                values.append(self.latest_joint_state[ros_joint_name]["velocity"])
+            else:
+                raise ValueError(f"Unknown data name: {data_name}")
 
         values = np.array(values, dtype=np.float32)
 
@@ -239,6 +268,11 @@ class RosMotorsBus:
 
         values = values.tolist()
 
+        if self.action_topic_name is not None:
+            self._ros_publisher_node.publish(
+                JointTrajectory(joint_names=ros_joint_names,
+                                points=[JointTrajectoryPoint(positions=values, joint_names=ros_joint_names)]))
+
         # log the number of seconds it took to write the data to the motors
         delta_ts_name = get_log_name("delta_timestamp_s", "write", data_name, motor_names)
         self.logs[delta_ts_name] = time.perf_counter() - start_time
@@ -255,5 +289,5 @@ class RosMotorsBus:
         if getattr(self, "is_connected", False):
             self.disconnect()
 
-    def get_ros_node(self):
-        return self._ros_node
+    def get_ros_nodes(self):
+        return self._ros_nodes

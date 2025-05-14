@@ -322,11 +322,11 @@ class ManipulatorRobot:
         # Collect all nodes from arms and cameras
         nodes = []
         for arm in self.follower_arms.values():
-            if hasattr(arm, 'get_ros_node'):
-                nodes.append(arm.get_ros_node())
+            if hasattr(arm, 'get_ros_nodes'):
+                nodes.extend(arm.get_ros_nodes())
         for arm in self.leader_arms.values():
-            if hasattr(arm, 'get_ros_node'):
-                nodes.append(arm.get_ros_node())
+            if hasattr(arm, 'get_ros_nodes'):
+                nodes.extend(arm.get_ros_nodes())
         for cam in self.cameras.values():
             if hasattr(cam, 'get_ros_node'):
                 nodes.append(cam.get_ros_node())
@@ -522,7 +522,8 @@ class ManipulatorRobot:
             follower_goal_pos[name] = goal_pos
 
             goal_pos = goal_pos.numpy().astype(np.float32)
-            self.follower_arms[name].write("Goal_Position", goal_pos)
+            if self.robot_type not in ["ffw"]: # FFW receives goal position via ROS Leader
+                self.follower_arms[name].write("Goal_Position", goal_pos)
             self.logs[f"write_follower_{name}_goal_pos_dt_s"] = time.perf_counter() - before_fwrite_t
 
         # Early exit when recording data is not requested

@@ -46,5 +46,6 @@ class FeetechMotorsBusConfig(MotorsBusConfig):
 class RosMotorsBusConfig(MotorsBusConfig):
     topic_name: str
     topic_type: str
+    action_topic_name: str | None = None
     motors: dict[str, tuple[int, str]]
     mock: bool = False
