@@ -112,3 +112,17 @@ class IntelRealSenseCameraConfig(CameraConfig):
 
         if self.rotation not in [-90, None, 90, 180]:
             raise ValueError(f"`rotation` must be in [-90, None, 90, 180] (got {self.rotation})")
+
+
+@CameraConfig.register_subclass("ros")
+@dataclass
+class RosCameraConfig(CameraConfig):
+    topic_name: str = "/camera/camera/color/image_rect_raw"
+    mock: bool = False
+    fps: int | None = None
+    width: int | None = None
+    height: int | None = None
+    channels: int | None = None
+
+    def __post_init__(self):
+        self.channels = 3

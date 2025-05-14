@@ -18,6 +18,7 @@ from lerobot.common.robot_devices.motors.configs import (
     DynamixelMotorsBusConfig,
     FeetechMotorsBusConfig,
     MotorsBusConfig,
+    RosMotorsBusConfig,
 )
 
 
@@ -43,6 +44,11 @@ def make_motors_buses_from_configs(motors_bus_configs: dict[str, MotorsBusConfig
             from lerobot.common.robot_devices.motors.feetech import FeetechMotorsBus
 
             motors_buses[key] = FeetechMotorsBus(cfg)
+
+        elif cfg.type == "ros":
+            from lerobot.common.robot_devices.motors.ros import RosMotorsBus
+
+            motors_buses[key] = RosMotorsBus(cfg)
 
         else:
             raise ValueError(f"The motor type '{cfg.type}' is not valid.")

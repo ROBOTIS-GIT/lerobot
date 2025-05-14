@@ -22,13 +22,17 @@ from lerobot.common.robot_devices.cameras.configs import (
     CameraConfig,
     IntelRealSenseCameraConfig,
     OpenCVCameraConfig,
+    RosCameraConfig,
 )
 from lerobot.common.robot_devices.motors.configs import (
     DynamixelMotorsBusConfig,
     FeetechMotorsBusConfig,
     MotorsBusConfig,
+    RosMotorsBusConfig,
 )
 
+from sensor_msgs.msg import JointState
+from trajectory_msgs.msg import JointTrajectory
 
 @dataclass
 class RobotConfig(draccus.ChoiceRegistry, abc.ABC):
@@ -670,6 +674,157 @@ class LeKiwiRobotConfig(RobotConfig):
             "speed_down": "f",
             # quit teleop
             "quit": "q",
+        }
+    )
+
+    mock: bool = False
+
+@RobotConfig.register_subclass("omx")
+@dataclass
+class OMXRobotConfig(ManipulatorRobotConfig):
+    calibration_dir: str = "/home/ai/robotis_ws/src/lerobot_package/.cache/calibration/omx"
+    # `max_relative_target` limits the magnitude of the relative positional target vector for safety purposes.
+    # Set this to a positive scalar to have the same value for all motors, or a list that is the same length as
+    # the number of motors in your follower arms.
+    max_relative_target: int | None = None
+
+    leader_arms: dict[str, MotorsBusConfig] = field(
+        default_factory=lambda: {
+            "main": DynamixelMotorsBusConfig(
+                port="/dev/ttyACM0",
+                motors={
+                    # name: (index, model)
+                    "shoulder_pan": (1, "xm430-w350"),
+                    "shoulder_lift": (2, "xm430-w350"),
+                    "elbow_flex": (3, "xm430-w350"),
+                    "wrist_flex": (4, "xm430-w350"),
+                    "gripper": (5, "xm430-w350"),
+                },
+            ),
+        }
+    )
+
+    follower_arms: dict[str, MotorsBusConfig] = field(
+        default_factory=lambda: {
+            "main": DynamixelMotorsBusConfig(
+                port="/dev/ttyUSB0",
+                motors={
+                    # name: (index, model)
+                    "shoulder_pan": (11, "xm430-w350"),
+                    "shoulder_lift": (12, "xm430-w350"),
+                    "elbow_flex": (13, "xm430-w350"),
+                    "wrist_flex": (14, "xm430-w350"),
+                    "gripper": (15, "xm430-w350"),
+                },
+            ),
+        }
+    )
+
+    cameras: dict[str, CameraConfig] = field(
+        default_factory=lambda: {
+            "cam_1": OpenCVCameraConfig(
+                camera_index=4,
+                fps=30,
+                width=640,
+                height=480,
+            ),
+        }
+    )
+
+    mock: bool = False
+
+
+@RobotConfig.register_subclass("ffw")
+@dataclass
+class FFWRobotConfig(ManipulatorRobotConfig):
+    calibration_dir: str = ""
+    # `max_relative_target` limits the magnitude of the relative positional target vector for safety purposes.
+    # Set this to a positive scalar to have the same value for all motors, or a list that is the same length as
+    # the number of motors in your follower arms.
+    max_relative_target: int | None = None
+    leader_arms: dict[str, MotorsBusConfig] = field(
+        default_factory=lambda: {
+            "arm_right": RosMotorsBusConfig(
+                topic_name='/leader/joint_trajectory_command_broadcaster_right/joint_trajectory',
+                topic_type=JointTrajectory,
+                motors={
+                    # name: (index, ros_joint_name)
+                    "waist": [1, "arm_r_joint1"],
+                    "shoulder": [2, "arm_r_joint2"],
+                    "shoulder_shadow": [3, "arm_r_joint3"],
+                    "elbow": [4, "arm_r_joint4"],
+                    "elbow_shadow": [5, "arm_r_joint5"],
+                    "forearm_roll": [6, "arm_r_joint6"],
+                    "wrist_angle": [7, "arm_r_joint7"],
+                    "gripper": [8, "r_rh_r1_joint"],
+                },
+            ),
+            "arm_left": RosMotorsBusConfig(
+                topic_name='/leader/joint_trajectory_command_broadcaster_left/joint_trajectory',
+                topic_type=JointTrajectory,
+                motors={
+                    # name: (index, ros_joint_name)
+                    "waist": [1, "arm_l_joint1"],
+                    "shoulder": [2, "arm_l_joint2"],
+                    "shoulder_shadow": [3, "arm_l_joint3"],
+                    "elbow": [4, "arm_l_joint4"],
+                    "elbow_shadow": [5, "arm_l_joint5"],
+                    "forearm_roll": [6, "arm_l_joint6"],
+                    "wrist_angle": [7, "arm_l_joint7"],
+                    "gripper": [8, "l_rh_r1_joint"],
+                },
+            ),
+        }
+    )
+    follower_arms: dict[str, MotorsBusConfig] = field(
+        default_factory=lambda: {
+            "arm_right": RosMotorsBusConfig(
+                topic_name='/joint_states',
+                topic_type=JointState,
+                motors={
+                    # name: (index, model)
+                    "waist": [1, "arm_r_joint1"],
+                    "shoulder": [2, "arm_r_joint2"],
+                    "shoulder_shadow": [3, "arm_r_joint3"],
+                    "elbow": [4, "arm_r_joint4"],
+                    "elbow_shadow": [5, "arm_r_joint5"],
+                    "forearm_roll": [6, "arm_r_joint6"],
+                    "wrist_angle": [7, "arm_r_joint7"],
+                    "gripper": [8, "r_rh_r1_joint"],
+                },
+            ),
+            "arm_left": RosMotorsBusConfig(
+                topic_name='/joint_states',
+                topic_type=JointState,
+                motors={
+                    # name: (index, model)
+                    "waist": [1, "arm_l_joint1"],
+                    "shoulder": [2, "arm_l_joint2"],
+                    "shoulder_shadow": [3, "arm_l_joint3"],
+                    "elbow": [4, "arm_l_joint4"],
+                    "elbow_shadow": [5, "arm_l_joint5"],
+                    "forearm_roll": [6, "arm_l_joint6"],
+                    "wrist_angle": [7, "arm_l_joint7"],
+                    "gripper": [8, "l_rh_r1_joint"],
+                },
+            ),
+        }
+    )
+
+    cameras: dict[str, CameraConfig] = field(
+        default_factory=lambda: {
+            "realsense": RosCameraConfig(
+                topic_name="/camera/camera/color/image_rect_raw",
+                fps=30,
+                width=424,
+                height=240,
+            ),
+            "zed": RosCameraConfig(
+                topic_name="/zed/zed_node/rgb/image_rect_color",
+                fps=15,
+                width=960,
+                height=540,
+            ),
         }
     )
 

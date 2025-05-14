@@ -23,15 +23,19 @@ import logging
 import time
 import warnings
 from pathlib import Path
+import threading
 
 import numpy as np
 import torch
+import rclpy
+from rclpy.executors import MultiThreadedExecutor
 
 from lerobot.common.robot_devices.cameras.utils import make_cameras_from_configs
 from lerobot.common.robot_devices.motors.utils import MotorsBus, make_motors_buses_from_configs
 from lerobot.common.robot_devices.robots.configs import ManipulatorRobotConfig
 from lerobot.common.robot_devices.robots.utils import get_arm_id
 from lerobot.common.robot_devices.utils import RobotDeviceAlreadyConnectedError, RobotDeviceNotConnectedError
+from lerobot.common.robot_devices.ros_utils import ensure_rclpy_init
 
 
 def ensure_safe_goal_position(
@@ -233,13 +237,36 @@ class ManipulatorRobot:
                 "ManipulatorRobot doesn't have any device to connect. See example of usage in docstring of the class."
             )
 
-        # Connect the arms
+        if self.robot_type in ["ffw"]:
+            ensure_rclpy_init()
+
+        # Connect the arms (do not start threads or spin here)
         for name in self.follower_arms:
             print(f"Connecting {name} follower arm.")
             self.follower_arms[name].connect()
         for name in self.leader_arms:
             print(f"Connecting {name} leader arm.")
             self.leader_arms[name].connect()
+
+        if self.robot_type in ["ffw"]:
+            ensure_rclpy_init()
+            for name in self.cameras:
+                print(f"Connecting {name} camera.")
+                self.cameras[name].connect()
+            self.is_connected = True
+            print(f"{self.robot_type} robot detected!")
+            # Spin all nodes in a MultiThreadedExecutor
+            self._spin_ros_nodes()
+            print("ROS nodes spun")
+
+            for name in self.follower_arms:
+                self.follower_arms[name]._wait_for_joint_state()
+            for name in self.leader_arms:
+                self.leader_arms[name]._wait_for_joint_state()
+
+            for name in self.cameras:
+                self.cameras[name]._wait_for_image()
+            return
 
         if self.robot_type in ["koch", "koch_bimanual", "aloha"]:
             from lerobot.common.robot_devices.motors.dynamixel import TorqueMode
@@ -290,6 +317,26 @@ class ManipulatorRobot:
             self.cameras[name].connect()
 
         self.is_connected = True
+
+    def _spin_ros_nodes(self):
+        # Collect all nodes from arms and cameras
+        nodes = []
+        for arm in self.follower_arms.values():
+            if hasattr(arm, 'get_ros_node'):
+                nodes.append(arm.get_ros_node())
+        for arm in self.leader_arms.values():
+            if hasattr(arm, 'get_ros_node'):
+                nodes.append(arm.get_ros_node())
+        for cam in self.cameras.values():
+            if hasattr(cam, 'get_ros_node'):
+                nodes.append(cam.get_ros_node())
+        if not nodes:
+            return
+        self.executor = MultiThreadedExecutor()
+        for node in nodes:
+            self.executor.add_node(node)
+        self._ros_spin_thread = threading.Thread(target=self.executor.spin, daemon=True)
+        self._ros_spin_thread.start()
 
     def activate_calibration(self):
         """After calibration all motors function in human interpretable ranges.
