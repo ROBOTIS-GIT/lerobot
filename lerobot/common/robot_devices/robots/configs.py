@@ -781,6 +781,7 @@ class FFWRobotConfig(ManipulatorRobotConfig):
             "arm_right": RosMotorsBusConfig(
                 topic_name='/joint_states',
                 topic_type=JointState,
+                action_topic_name='/leader/joint_trajectory_command_broadcaster_right/joint_trajectory',
                 motors={
                     # name: (index, model)
                     "waist": [1, "arm_r_joint1"],
@@ -796,6 +797,7 @@ class FFWRobotConfig(ManipulatorRobotConfig):
             "arm_left": RosMotorsBusConfig(
                 topic_name='/joint_states',
                 topic_type=JointState,
+                action_topic_name='/leader/joint_trajectory_command_broadcaster_left/joint_trajectory',
                 motors={
                     # name: (index, model)
                     "waist": [1, "arm_l_joint1"],
