@@ -682,7 +682,7 @@ class LeKiwiRobotConfig(RobotConfig):
 @RobotConfig.register_subclass("omx")
 @dataclass
 class OMXRobotConfig(ManipulatorRobotConfig):
-    calibration_dir: str = "/home/ai/robotis_ws/src/lerobot_package/.cache/calibration/omx"
+    calibration_dir: str = ""
     # `max_relative_target` limits the magnitude of the relative positional target vector for safety purposes.
     # Set this to a positive scalar to have the same value for all motors, or a list that is the same length as
     # the number of motors in your follower arms.
@@ -690,15 +690,16 @@ class OMXRobotConfig(ManipulatorRobotConfig):
 
     leader_arms: dict[str, MotorsBusConfig] = field(
         default_factory=lambda: {
-            "main": DynamixelMotorsBusConfig(
-                port="/dev/ttyACM0",
+            "main": RosMotorsBusConfig(
+                topic_name='/leader/joint_trajectory_command_broadcaster/joint_trajectory',
+                topic_type=JointTrajectory,
                 motors={
                     # name: (index, model)
-                    "shoulder_pan": (1, "xm430-w350"),
-                    "shoulder_lift": (2, "xm430-w350"),
-                    "elbow_flex": (3, "xm430-w350"),
-                    "wrist_flex": (4, "xm430-w350"),
-                    "gripper": (5, "xm430-w350"),
+                    "shoulder_pan": (1, "joint1"),
+                    "shoulder_lift": (2, "joint2"),
+                    "elbow_flex": (3, "joint3"),
+                    "wrist_flex": (4, "joint4"),
+                    "gripper": (5, "joint5"),
                 },
             ),
         }
@@ -706,15 +707,17 @@ class OMXRobotConfig(ManipulatorRobotConfig):
 
     follower_arms: dict[str, MotorsBusConfig] = field(
         default_factory=lambda: {
-            "main": DynamixelMotorsBusConfig(
-                port="/dev/ttyUSB0",
+            "main": RosMotorsBusConfig(
+                topic_name='/joint_states',
+                topic_type=JointState,
+                action_topic_name='/leader/joint_trajectory_command_broadcaster/joint_trajectory',
                 motors={
                     # name: (index, model)
-                    "shoulder_pan": (11, "xm430-w350"),
-                    "shoulder_lift": (12, "xm430-w350"),
-                    "elbow_flex": (13, "xm430-w350"),
-                    "wrist_flex": (14, "xm430-w350"),
-                    "gripper": (15, "xm430-w350"),
+                    "shoulder_pan": (1, "joint1"),
+                    "shoulder_lift": (2, "joint2"),
+                    "elbow_flex": (3, "joint3"),
+                    "wrist_flex": (4, "joint4"),
+                    "gripper": (5, "joint5"),
                 },
             ),
         }
