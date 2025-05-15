@@ -205,9 +205,17 @@ class RosMotorsBus:
         self._ros_nodes = None
 
     def _wait_for_joint_state(self):
-        while self.latest_joint_state is None:
+        timeout = 10  # 10 iterations
+        for _ in range(timeout):
+            if self.latest_joint_state is not None:
+                print(f"Joint state received on topic '{self.topic_name}'")
+                return
+            print(f"No joint state yet on topic '{self.topic_name}'... waiting")
             time.sleep(1)
-            print("No joint state yet... waiting")
+        if 'leader' in self.topic_name:
+            print(f"Timeout reached after {timeout} iterations. Continuing for inference purposes.")
+        else:
+            raise TimeoutError(f"Timeout reached after {timeout} iterations. No joint state received on topic '{self.topic_name}'.")
 
     def connect(self):
         # Instead of starting a thread, just create the node
