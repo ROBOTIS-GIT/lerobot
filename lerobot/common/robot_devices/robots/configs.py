@@ -822,19 +822,19 @@ class FFWRobotConfig(ManipulatorRobotConfig):
 
     cameras: dict[str, CameraConfig] = field(
         default_factory=lambda: {
-            "realsense1": RosCameraConfig(
+            "cam_wrist_1": RosCameraConfig(
                 topic_name="/camera_left/camera_left/color/image_rect_raw",
                 fps=15,
                 width=424,
                 height=240,
             ),
-            "realsense2": RosCameraConfig(
+            "cam_wrist_2": RosCameraConfig(
                 topic_name="/camera_right/camera_right/color/image_rect_raw",
                 fps=15,
                 width=424,
                 height=240,
             ),
-            "zed": RosCameraConfig(
+            "cam_head": RosCameraConfig(
                 topic_name="/zed/zed_node/rgb/image_rect_color",
                 fps=15,
                 width=672,
