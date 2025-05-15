@@ -748,6 +748,7 @@ class FFWRobotConfig(ManipulatorRobotConfig):
     leader_arms: dict[str, MotorsBusConfig] = field(
         default_factory=lambda: {
             "arm_right": RosMotorsBusConfig(
+                fps=15,
                 topic_name='/leader/joint_trajectory_command_broadcaster_right/joint_trajectory',
                 topic_type=JointTrajectory,
                 motors={
@@ -763,6 +764,7 @@ class FFWRobotConfig(ManipulatorRobotConfig):
                 },
             ),
             "arm_left": RosMotorsBusConfig(
+                fps=15,
                 topic_name='/leader/joint_trajectory_command_broadcaster_left/joint_trajectory',
                 topic_type=JointTrajectory,
                 motors={
@@ -782,6 +784,7 @@ class FFWRobotConfig(ManipulatorRobotConfig):
     follower_arms: dict[str, MotorsBusConfig] = field(
         default_factory=lambda: {
             "arm_right": RosMotorsBusConfig(
+                fps=15,
                 topic_name='/joint_states',
                 topic_type=JointState,
                 action_topic_name='/leader/joint_trajectory_command_broadcaster_right/joint_trajectory',
@@ -798,6 +801,7 @@ class FFWRobotConfig(ManipulatorRobotConfig):
                 },
             ),
             "arm_left": RosMotorsBusConfig(
+                fps=15,
                 topic_name='/joint_states',
                 topic_type=JointState,
                 action_topic_name='/leader/joint_trajectory_command_broadcaster_left/joint_trajectory',
@@ -818,17 +822,23 @@ class FFWRobotConfig(ManipulatorRobotConfig):
 
     cameras: dict[str, CameraConfig] = field(
         default_factory=lambda: {
-            "realsense": RosCameraConfig(
-                topic_name="/camera/camera/color/image_rect_raw",
-                fps=30,
+            "realsense1": RosCameraConfig(
+                topic_name="/camera_left/camera_left/color/image_rect_raw",
+                fps=15,
+                width=424,
+                height=240,
+            ),
+            "realsense2": RosCameraConfig(
+                topic_name="/camera_right/camera_right/color/image_rect_raw",
+                fps=15,
                 width=424,
                 height=240,
             ),
             "zed": RosCameraConfig(
                 topic_name="/zed/zed_node/rgb/image_rect_color",
                 fps=15,
-                width=960,
-                height=540,
+                width=672,
+                height=376,
             ),
         }
     )

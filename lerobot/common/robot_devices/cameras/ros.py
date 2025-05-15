@@ -1,18 +1,22 @@
 import threading
 import time
 import numpy as np
+import uuid
 
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
+from rclpy.qos import QoSProfile, HistoryPolicy
 
 from lerobot.common.robot_devices.cameras.configs import RosCameraConfig
 from lerobot.common.utils.utils import capture_timestamp_utc
 
 class ROSImageSubscriber(Node):
-    def __init__(self, image_callback, stop_event: threading.Event, topic_name="/camera/camera/color/image_rect_raw", fps=30):
-        super().__init__("ros_image_subscriber")
+    def __init__(self, image_callback, stop_event: threading.Event, topic_name="/camera/camera/color/image_rect_raw", fps=None, node_name=None):
+        if node_name is None:
+            node_name = f"ros_image_subscriber_{uuid.uuid4().hex[:8]}"
+        super().__init__(node_name)
         self.bridge = CvBridge()
         self.image_callback = image_callback
         self.stop_event = stop_event
@@ -25,15 +29,28 @@ class ROSImageSubscriber(Node):
             Image,
             topic_name,
             self.listener_callback,
-            10,
+            QoSProfile(depth=1, history=HistoryPolicy.KEEP_LAST),
         )
 
-        # Convert only at given FPS
-        self.timer = self.create_timer(1.0 / self.fps, self.process_image)
+        # Only create a timer if fps is not None
+        if self.fps is not None:
+            self.timer = self.create_timer(1.0 / self.fps, self.process_image)
 
     def listener_callback(self, msg):
-        with self.lock:
-            self.latest_msg = msg
+        if self.stop_event.is_set():
+            rclpy.shutdown()
+            return
+
+        if self.fps is None:
+            # Directly process the image in the callback
+            try:
+                cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="rgb8")
+                self.image_callback(cv_image)
+            except Exception as e:
+                self.get_logger().error(f"Failed to convert image: {e}")
+        else:
+            with self.lock:
+                self.latest_msg = msg
 
     def process_image(self):
         if self.stop_event.is_set():
