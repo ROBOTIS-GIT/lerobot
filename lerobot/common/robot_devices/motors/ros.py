@@ -18,6 +18,7 @@ import math
 import time
 import traceback
 from copy import deepcopy
+import threading
 
 import numpy as np
 import tqdm
@@ -37,7 +38,7 @@ class JointTrajectoryPublisher(Node):
         if node_name is None:
             node_name = f"joint_trajectory_publisher_{uuid.uuid4().hex[:8]}"
         super().__init__(node_name)
-        
+
         self.publisher = self.create_publisher(JointTrajectory, topic_name, 10)
 
     def publish(self, joint_trajectory: JointTrajectory):
@@ -45,11 +46,14 @@ class JointTrajectoryPublisher(Node):
 
 
 class JointStatesSubscriber(Node):
-    def __init__(self, callback, topic_name="/joint_states", node_name=None):
+    def __init__(self, callback, topic_name="/joint_states", node_name=None, fps=None):
         if node_name is None:
             node_name = f"joint_states_subscriber_{uuid.uuid4().hex[:8]}"
         super().__init__(node_name)
         self.callback = callback
+        self.fps = fps
+        self.latest_msg = None
+        self.lock = threading.Lock()
 
         self.subscription = self.create_subscription(
             JointState,
@@ -58,7 +62,28 @@ class JointStatesSubscriber(Node):
             10
         )
 
+        if self.fps is not None:
+            self.timer = self.create_timer(1.0 / self.fps, self.process_message)
+
     def listener_callback(self, msg: JointState):
+        with self.lock:
+            self.latest_msg = msg
+        if self.fps is None:
+            joint_data = {
+                "name": list(msg.name),
+                "position": np.array(msg.position),
+                "velocity": np.array(msg.velocity),
+                "effort": np.array(msg.effort),
+                "timestamp_utc": capture_timestamp_utc(),
+            }
+            self.callback(joint_data)
+
+    def process_message(self):
+        with self.lock:
+            if self.latest_msg is None:
+                return
+            msg = self.latest_msg
+            self.latest_msg = None
         joint_data = {
             "name": list(msg.name),
             "position": np.array(msg.position),
@@ -66,16 +91,18 @@ class JointStatesSubscriber(Node):
             "effort": np.array(msg.effort),
             "timestamp_utc": capture_timestamp_utc(),
         }
-
         self.callback(joint_data)
 
 
 class JointTrajectorySubscriber(Node):
-    def __init__(self, callback, topic_name="/joint_trajectory", node_name=None):
+    def __init__(self, callback, topic_name="/joint_trajectory", node_name=None, fps=None):
         if node_name is None:
             node_name = f"joint_trajectory_subscriber_{uuid.uuid4().hex[:8]}"
         super().__init__(node_name)
         self.callback = callback
+        self.fps = fps
+        self.latest_msg = None
+        self.lock = threading.Lock()
 
         self.subscription = self.create_subscription(
             JointTrajectory,
@@ -84,8 +111,31 @@ class JointTrajectorySubscriber(Node):
             10
         )
 
+        if self.fps is not None:
+            self.timer = self.create_timer(1.0 / self.fps, self.process_message)
+
     def listener_callback(self, msg: JointTrajectory):
-        # Only use the first point if available
+        with self.lock:
+            self.latest_msg = msg
+        if self.fps is None:
+            if not msg.points:
+                return
+            point = msg.points[0]
+            joint_data = {
+                "name": list(msg.joint_names),
+                "position": np.array(point.positions) if point.positions else np.zeros(len(msg.joint_names)),
+                "velocity": np.array(point.velocities) if point.velocities else np.zeros(len(msg.joint_names)),
+                "effort": np.array(point.effort) if point.effort else np.zeros(len(msg.joint_names)),
+                "timestamp_utc": capture_timestamp_utc(),
+            }
+            self.callback(joint_data)
+
+    def process_message(self):
+        with self.lock:
+            if self.latest_msg is None:
+                return
+            msg = self.latest_msg
+            self.latest_msg = None
         if not msg.points:
             return
         point = msg.points[0]
@@ -145,15 +195,14 @@ class RosMotorsBus:
         self.topic_name = config.topic_name
         self.topic_type = config.topic_type
         self.action_topic_name = config.action_topic_name
-        
+        self.fps = config.fps
+
         self.is_connected = True
         self.logs = {}
         self.latest_joint_state = None  # Initialize as empty dict
         self._ros_subscriber_node = None
         self._ros_publisher_node = None
-        self._ros_nodes = [self._ros_subscriber_node]
-        if self.action_topic_name is not None:
-            self._ros_nodes.append(self._ros_publisher_node)
+        self._ros_nodes = None
 
     def _wait_for_joint_state(self):
         while self.latest_joint_state is None:
@@ -164,16 +213,19 @@ class RosMotorsBus:
         # Instead of starting a thread, just create the node
         self._run_ros_node()
         self.is_connected = True
+        self._ros_nodes = [self._ros_subscriber_node]
+        if self.action_topic_name is not None:
+            self._ros_nodes.append(self._ros_publisher_node)
 
     def _run_ros_node(self):
         # Create the node but do not spin it
         if self.topic_type is JointState:
-            self._ros_subscriber_node = JointStatesSubscriber(self._joint_callback, topic_name=self.topic_name)
+            self._ros_subscriber_node = JointStatesSubscriber(self._joint_callback, topic_name=self.topic_name, fps=self.fps)
         elif self.topic_type is JointTrajectory:
-            self._ros_subscriber_node = JointTrajectorySubscriber(self._joint_callback, topic_name=self.topic_name)
+            self._ros_subscriber_node = JointTrajectorySubscriber(self._joint_callback, topic_name=self.topic_name, fps=self.fps)
         else:
             raise ValueError(f"Unknown topic type: {self.topic_type}")
-        
+
         if self.action_topic_name is not None:
             self._ros_publisher_node = JointTrajectoryPublisher(self.action_topic_name)
 
