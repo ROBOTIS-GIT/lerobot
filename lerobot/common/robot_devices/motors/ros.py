@@ -192,8 +192,8 @@ class RosMotorsBus:
         self.motors = config.motors
         self.mock = config.mock
 
-        self.topic_name = config.topic_name
-        self.topic_type = config.topic_type
+        self.observation_topic_name = config.observation_topic_name
+        self.observation_msg_type = config.observation_msg_type
         self.action_topic_name = config.action_topic_name
         self.fps = config.fps
 
@@ -208,14 +208,14 @@ class RosMotorsBus:
         timeout = 10  # 10 iterations
         for _ in range(timeout):
             if self.latest_joint_state is not None:
-                print(f"Joint state received on topic '{self.topic_name}'")
+                print(f"Joint state received on topic '{self.observation_topic_name}'")
                 return
-            print(f"No joint state yet on topic '{self.topic_name}'... waiting")
+            print(f"No joint state yet on topic '{self.observation_topic_name}'... waiting")
             time.sleep(1)
-        if 'leader' in self.topic_name:
+        if 'leader' in self.observation_topic_name:
             print(f"Timeout reached after {timeout} iterations. Continuing for inference purposes.")
         else:
-            raise TimeoutError(f"Timeout reached after {timeout} iterations. No joint state received on topic '{self.topic_name}'.")
+            raise TimeoutError(f"Timeout reached after {timeout} iterations. No joint state received on topic '{self.observation_topic_name}'.")
 
     def connect(self):
         # Instead of starting a thread, just create the node
@@ -227,12 +227,12 @@ class RosMotorsBus:
 
     def _run_ros_node(self):
         # Create the node but do not spin it
-        if self.topic_type is JointState:
-            self._ros_subscriber_node = JointStatesSubscriber(self._joint_callback, topic_name=self.topic_name, fps=self.fps)
-        elif self.topic_type is JointTrajectory:
-            self._ros_subscriber_node = JointTrajectorySubscriber(self._joint_callback, topic_name=self.topic_name, fps=self.fps)
+        if self.observation_msg_type == "JointState":
+            self._ros_subscriber_node = JointStatesSubscriber(self._joint_callback, topic_name=self.observation_topic_name, fps=self.fps)
+        elif self.observation_msg_type == "JointTrajectory":
+            self._ros_subscriber_node = JointTrajectorySubscriber(self._joint_callback, topic_name=self.observation_topic_name, fps=self.fps)
         else:
-            raise ValueError(f"Unknown topic type: {self.topic_type}")
+            raise ValueError(f"Unknown topic type: {self.observation_msg_type}")
 
         if self.action_topic_name is not None:
             self._ros_publisher_node = JointTrajectoryPublisher(self.action_topic_name)

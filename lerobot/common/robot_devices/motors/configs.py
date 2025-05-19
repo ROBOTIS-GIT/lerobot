@@ -44,8 +44,8 @@ class FeetechMotorsBusConfig(MotorsBusConfig):
 @MotorsBusConfig.register_subclass("ros")
 @dataclass
 class RosMotorsBusConfig(MotorsBusConfig):
-    topic_name: str
-    topic_type: str
+    observation_topic_name: str
+    observation_msg_type: str
     motors: dict[str, tuple[int, str]]
     action_topic_name: str | None = None
     mock: bool = False
