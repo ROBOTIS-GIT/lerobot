@@ -123,6 +123,7 @@ class RosCameraConfig(CameraConfig):
     width: int | None = None
     height: int | None = None
     channels: int | None = None
+    msg_type: str = "Image"  # 'Image' or 'CompressedImage'
 
     def __post_init__(self):
         self.channels = 3

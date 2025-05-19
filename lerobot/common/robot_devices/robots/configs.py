@@ -31,9 +31,6 @@ from lerobot.common.robot_devices.motors.configs import (
     RosMotorsBusConfig,
 )
 
-from sensor_msgs.msg import JointState
-from trajectory_msgs.msg import JointTrajectory
-
 @dataclass
 class RobotConfig(draccus.ChoiceRegistry, abc.ABC):
     @property
@@ -679,63 +676,6 @@ class LeKiwiRobotConfig(RobotConfig):
 
     mock: bool = False
 
-@RobotConfig.register_subclass("omx")
-@dataclass
-class OMXRobotConfig(ManipulatorRobotConfig):
-    calibration_dir: str = ""
-    # `max_relative_target` limits the magnitude of the relative positional target vector for safety purposes.
-    # Set this to a positive scalar to have the same value for all motors, or a list that is the same length as
-    # the number of motors in your follower arms.
-    max_relative_target: int | None = None
-
-    leader_arms: dict[str, MotorsBusConfig] = field(
-        default_factory=lambda: {
-            "main": RosMotorsBusConfig(
-                topic_name='/leader/joint_trajectory_command_broadcaster/joint_trajectory',
-                topic_type=JointTrajectory,
-                motors={
-                    # name: (index, model)
-                    "shoulder_pan": (1, "joint1"),
-                    "shoulder_lift": (2, "joint2"),
-                    "elbow_flex": (3, "joint3"),
-                    "wrist_flex": (4, "joint4"),
-                    "gripper": (5, "joint5"),
-                },
-            ),
-        }
-    )
-
-    follower_arms: dict[str, MotorsBusConfig] = field(
-        default_factory=lambda: {
-            "main": RosMotorsBusConfig(
-                topic_name='/joint_states',
-                topic_type=JointState,
-                action_topic_name='/leader/joint_trajectory_command_broadcaster/joint_trajectory',
-                motors={
-                    # name: (index, model)
-                    "shoulder_pan": (1, "joint1"),
-                    "shoulder_lift": (2, "joint2"),
-                    "elbow_flex": (3, "joint3"),
-                    "wrist_flex": (4, "joint4"),
-                    "gripper": (5, "joint5"),
-                },
-            ),
-        }
-    )
-
-    cameras: dict[str, CameraConfig] = field(
-        default_factory=lambda: {
-            "cam_1": OpenCVCameraConfig(
-                camera_index=4,
-                fps=30,
-                width=640,
-                height=480,
-            ),
-        }
-    )
-
-    mock: bool = False
-
 
 @RobotConfig.register_subclass("ffw")
 @dataclass
@@ -749,8 +689,8 @@ class FFWRobotConfig(ManipulatorRobotConfig):
         default_factory=lambda: {
             "arm_right": RosMotorsBusConfig(
                 fps=15,
-                topic_name='/leader/joint_trajectory_command_broadcaster_right/joint_trajectory',
-                topic_type=JointTrajectory,
+                observation_topic_name='/leader/joint_trajectory_command_broadcaster_right/joint_trajectory',
+                observation_msg_type="JointTrajectory",
                 motors={
                     # name: (index, ros_joint_name)
                     "waist": [1, "arm_r_joint1"],
@@ -765,8 +705,8 @@ class FFWRobotConfig(ManipulatorRobotConfig):
             ),
             "arm_left": RosMotorsBusConfig(
                 fps=15,
-                topic_name='/leader/joint_trajectory_command_broadcaster_left/joint_trajectory',
-                topic_type=JointTrajectory,
+                observation_topic_name='/leader/joint_trajectory_command_broadcaster_left/joint_trajectory',
+                observation_msg_type="JointTrajectory",
                 motors={
                     # name: (index, ros_joint_name)
                     "waist": [1, "arm_l_joint1"],
@@ -777,6 +717,22 @@ class FFWRobotConfig(ManipulatorRobotConfig):
                     "forearm_roll": [6, "arm_l_joint6"],
                     "wrist_angle": [7, "arm_l_joint7"],
                     "gripper": [8, "l_rh_r1_joint"],
+                },
+            ),
+            "neck": RosMotorsBusConfig(
+                observation_topic_name='/leader/joystick_controller_left/joint_trajectory',
+                observation_msg_type="JointTrajectory",
+                motors={
+                    # name: (index, ros_joint_name)
+                    "neck_pitch": [1, "neck_joint1"],
+                    "neck_yaw": [2, "neck_joint2"],
+                },
+            ),
+            "linear": RosMotorsBusConfig(
+                observation_topic_name='/leader/joystick_controller_right/joint_trajectory',
+                observation_msg_type="JointTrajectory",
+                motors={
+                    "linear_z": [1, "linear_joint"],
                 },
             ),
         }
@@ -785,11 +741,11 @@ class FFWRobotConfig(ManipulatorRobotConfig):
         default_factory=lambda: {
             "arm_right": RosMotorsBusConfig(
                 fps=15,
-                topic_name='/joint_states',
-                topic_type=JointState,
+                observation_topic_name='/joint_states',
+                observation_msg_type="JointState",
                 action_topic_name='/leader/joint_trajectory_command_broadcaster_right/joint_trajectory',
                 motors={
-                    # name: (index, model)
+                    # name: (index, ros_joint_name)
                     "waist": [1, "arm_r_joint1"],
                     "shoulder": [2, "arm_r_joint2"],
                     "shoulder_shadow": [3, "arm_r_joint3"],
@@ -802,11 +758,11 @@ class FFWRobotConfig(ManipulatorRobotConfig):
             ),
             "arm_left": RosMotorsBusConfig(
                 fps=15,
-                topic_name='/joint_states',
-                topic_type=JointState,
+                observation_topic_name='/joint_states',
+                observation_msg_type="JointState",
                 action_topic_name='/leader/joint_trajectory_command_broadcaster_left/joint_trajectory',
                 motors={
-                    # name: (index, model)
+                    # name: (index, ros_joint_name)
                     "waist": [1, "arm_l_joint1"],
                     "shoulder": [2, "arm_l_joint2"],
                     "shoulder_shadow": [3, "arm_l_joint3"],
@@ -817,25 +773,47 @@ class FFWRobotConfig(ManipulatorRobotConfig):
                     "gripper": [8, "l_rh_r1_joint"],
                 },
             ),
+            "neck": RosMotorsBusConfig(
+                observation_topic_name='/joint_states',
+                observation_msg_type="JointState",
+                action_topic_name='/leader/joystick_controller_left/joint_trajectory',
+                motors={
+                    # name: (index, ros_joint_name)
+                    "neck_pitch": [1, "neck_joint1"],
+                    "neck_yaw": [2, "neck_joint2"],
+                },
+            ),
+            "linear": RosMotorsBusConfig(
+                observation_topic_name='/joint_states',
+                observation_msg_type="JointState",
+                action_topic_name='/leader/joystick_controller_right/joint_trajectory',
+                motors={
+                    # name: (index, ros_joint_name)
+                    "linear_z": [1, "linear_joint"],
+                },
+            ),
         }
     )
 
     cameras: dict[str, CameraConfig] = field(
         default_factory=lambda: {
             "cam_wrist_1": RosCameraConfig(
-                topic_name="/camera_left/camera_left/color/image_rect_raw",
+                topic_name="/camera_left/camera_left/color/image_rect_raw/compressed",
+                msg_type="CompressedImage",
                 fps=15,
                 width=424,
                 height=240,
             ),
             "cam_wrist_2": RosCameraConfig(
-                topic_name="/camera_right/camera_right/color/image_rect_raw",
+                topic_name="/camera_right/camera_right/color/image_rect_raw/compressed",
+                msg_type="CompressedImage",
                 fps=15,
                 width=424,
                 height=240,
             ),
             "cam_head": RosCameraConfig(
-                topic_name="/zed/zed_node/rgb/image_rect_color",
+                topic_name="/zed/zed_node/rgb/image_rect_color/compressed",
+                msg_type="CompressedImage",
                 fps=15,
                 width=672,
                 height=376,
