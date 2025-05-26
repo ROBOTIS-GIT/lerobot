@@ -797,26 +797,23 @@ class FFWRobotConfig(ManipulatorRobotConfig):
 
     cameras: dict[str, CameraConfig] = field(
         default_factory=lambda: {
-            "cam_wrist_1": RosCameraConfig(
-                topic_name="/camera_left/camera_left/color/image_rect_raw/compressed",
-                msg_type="CompressedImage",
+            "cam_wrist_1": IntelRealSenseCameraConfig(
+                serial_number='218622271442',
                 fps=15,
                 width=424,
                 height=240,
             ),
-            "cam_wrist_2": RosCameraConfig(
-                topic_name="/camera_right/camera_right/color/image_rect_raw/compressed",
-                msg_type="CompressedImage",
+            "cam_wrist_2": IntelRealSenseCameraConfig(
+                serial_number='218622275723',
                 fps=15,
                 width=424,
                 height=240,
             ),
-            "cam_head": RosCameraConfig(
-                topic_name="/zed/zed_node/rgb/image_rect_color/compressed",
-                msg_type="CompressedImage",
+            "cam_head": IntelRealSenseCameraConfig(
+                serial_number='049522250475',
                 fps=15,
-                width=672,
-                height=376,
+                width=640,
+                height=480,
             ),
         }
     )

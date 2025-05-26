@@ -260,12 +260,15 @@ class ManipulatorRobot:
             print("ROS nodes spun")
 
             for name in self.follower_arms:
-                self.follower_arms[name]._wait_for_joint_state()
+                if hasattr(self.follower_arms[name], '_wait_for_joint_state'):
+                    self.follower_arms[name]._wait_for_joint_state()
             for name in self.leader_arms:
-                self.leader_arms[name]._wait_for_joint_state()
+                if hasattr(self.leader_arms[name], '_wait_for_joint_state'):
+                    self.leader_arms[name]._wait_for_joint_state()
 
             for name in self.cameras:
-                self.cameras[name]._wait_for_image()
+                if hasattr(self.cameras[name], '_wait_for_image'):
+                    self.cameras[name]._wait_for_image()
             return
 
         if self.robot_type in ["koch", "koch_bimanual", "aloha"]:
