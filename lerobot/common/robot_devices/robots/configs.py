@@ -693,14 +693,14 @@ class FFWRobotConfig(ManipulatorRobotConfig):
                 observation_msg_type="JointTrajectory",
                 motors={
                     # name: (index, ros_joint_name)
-                    "waist": [1, "arm_r_joint1"],
-                    "shoulder": [2, "arm_r_joint2"],
-                    "shoulder_shadow": [3, "arm_r_joint3"],
-                    "elbow": [4, "arm_r_joint4"],
-                    "elbow_shadow": [5, "arm_r_joint5"],
-                    "forearm_roll": [6, "arm_r_joint6"],
-                    "wrist_angle": [7, "arm_r_joint7"],
-                    "gripper": [8, "r_rh_r1_joint"],
+                    "right_shoulder_pitch": [1, "arm_r_joint1"],
+                    "right_shoulder_roll": [2, "arm_r_joint2"],
+                    "right_shoulder_yaw": [3, "arm_r_joint3"],
+                    "right_elbow": [4, "arm_r_joint4"],
+                    "right_wrist_yaw": [5, "arm_r_joint5"],
+                    "right_wrist_pitch": [6, "arm_r_joint6"],
+                    "right_wrist_roll": [7, "arm_r_joint7"],
+                    "right_gripper": [8, "gripper_r_joint1"],
                 },
             ),
             "arm_left": RosMotorsBusConfig(
@@ -709,30 +709,31 @@ class FFWRobotConfig(ManipulatorRobotConfig):
                 observation_msg_type="JointTrajectory",
                 motors={
                     # name: (index, ros_joint_name)
-                    "waist": [1, "arm_l_joint1"],
-                    "shoulder": [2, "arm_l_joint2"],
-                    "shoulder_shadow": [3, "arm_l_joint3"],
-                    "elbow": [4, "arm_l_joint4"],
-                    "elbow_shadow": [5, "arm_l_joint5"],
-                    "forearm_roll": [6, "arm_l_joint6"],
-                    "wrist_angle": [7, "arm_l_joint7"],
-                    "gripper": [8, "l_rh_r1_joint"],
+                    "left_shoulder_pitch": [1, "arm_l_joint1"],
+                    "left_shoulder_roll": [2, "arm_l_joint2"],
+                    "left_shoulder_yaw": [3, "arm_l_joint3"],
+                    "left_elbow": [4, "arm_l_joint4"],
+                    "left_wrist_yaw": [5, "arm_l_joint5"],
+                    "left_wrist_pitch": [6, "arm_l_joint6"],
+                    "left_wrist_roll": [7, "arm_l_joint7"],
+                    "left_gripper": [8, "gripper_l_joint1"],
                 },
             ),
-            "neck": RosMotorsBusConfig(
+            "head": RosMotorsBusConfig(
                 observation_topic_name='/leader/joystick_controller_left/joint_trajectory',
                 observation_msg_type="JointTrajectory",
                 motors={
                     # name: (index, ros_joint_name)
-                    "neck_pitch": [1, "neck_joint1"],
-                    "neck_yaw": [2, "neck_joint2"],
+                    "head_pitch": [1, "head_joint1"],
+                    "head_yaw": [2, "head_joint2"],
                 },
             ),
-            "linear": RosMotorsBusConfig(
+            "lift": RosMotorsBusConfig(
                 observation_topic_name='/leader/joystick_controller_right/joint_trajectory',
                 observation_msg_type="JointTrajectory",
                 motors={
-                    "linear_z": [1, "linear_joint"],
+                    # name: (index, ros_joint_name)
+                    "lift": [1, "lift_joint"],
                 },
             ),
         }
@@ -753,7 +754,7 @@ class FFWRobotConfig(ManipulatorRobotConfig):
                     "right_wrist_yaw": [5, "arm_r_joint5"],
                     "right_wrist_pitch": [6, "arm_r_joint6"],
                     "right_wrist_roll": [7, "arm_r_joint7"],
-                    "right_gripper": [8, "r_rh_r1_joint"],
+                    "right_gripper": [8, "gripper_r_joint1"],
                 },
             ),
             "arm_left": RosMotorsBusConfig(
@@ -770,7 +771,7 @@ class FFWRobotConfig(ManipulatorRobotConfig):
                     "left_wrist_yaw": [5, "arm_l_joint5"],
                     "left_wrist_pitch": [6, "arm_l_joint6"],
                     "left_wrist_roll": [7, "arm_l_joint7"],
-                    "left_gripper": [8, "l_rh_r1_joint"],
+                    "left_gripper": [8, "gripper_l_joint1"],
                 },
             ),
             "head": RosMotorsBusConfig(
@@ -779,8 +780,8 @@ class FFWRobotConfig(ManipulatorRobotConfig):
                 action_topic_name='/leader/joystick_controller_left/joint_trajectory',
                 motors={
                     # name: (index, ros_joint_name)
-                    "head_pitch": [1, "neck_joint1"],
-                    "head_yaw": [2, "neck_joint2"],
+                    "head_pitch": [1, "head_joint1"],
+                    "head_yaw": [2, "head_joint2"],
                 },
             ),
             "lift": RosMotorsBusConfig(
@@ -789,7 +790,7 @@ class FFWRobotConfig(ManipulatorRobotConfig):
                 action_topic_name='/leader/joystick_controller_right/joint_trajectory',
                 motors={
                     # name: (index, ros_joint_name)
-                    "lift": [1, "linear_joint"],
+                    "lift": [1, "lift_joint"],
                 },
             ),
         }
