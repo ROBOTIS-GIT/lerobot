@@ -205,7 +205,7 @@ class RosMotorsBus:
         self._ros_nodes = None
 
     def _wait_for_joint_state(self):
-        timeout = 10  # 10 iterations
+        timeout = 5  # 10 iterations
         for _ in range(timeout):
             if self.latest_joint_state is not None:
                 print(f"Joint state received on topic '{self.observation_topic_name}'")
