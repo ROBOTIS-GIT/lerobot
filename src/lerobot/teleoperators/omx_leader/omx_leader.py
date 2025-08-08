@@ -43,7 +43,7 @@ class OmxLeader(Teleoperator):
         # Override calibration directory to use source code location
         from pathlib import Path
         config.calibration_dir = Path(__file__).parent / "calibration"
-        
+
         super().__init__(config)
         self.config = config
         self.bus = DynamixelMotorsBus(
@@ -58,6 +58,7 @@ class OmxLeader(Teleoperator):
             },
             calibration=self.calibration,
         )
+        self.bus.apply_drive_mode = True
 
     @property
     def action_features(self) -> dict[str, type]:
@@ -176,7 +177,7 @@ class OmxLeader(Teleoperator):
         action = {f"{motor}.pos": val for motor, val in action.items()}
         dt_ms = (time.perf_counter() - start) * 1e3
         logger.debug(f"{self} read action: {dt_ms:.1f}ms")
-        
+
         return action
 
     def send_feedback(self, feedback: dict[str, float]) -> None:
@@ -188,4 +189,4 @@ class OmxLeader(Teleoperator):
             raise DeviceNotConnectedError(f"{self} is not connected.")
 
         self.bus.disconnect()
-        logger.info(f"{self} disconnected.") 
+        logger.info(f"{self} disconnected.")

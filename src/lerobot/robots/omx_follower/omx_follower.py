@@ -47,21 +47,22 @@ class OmxFollower(Robot):
         if not config.calibration_dir:
             from pathlib import Path
             config.calibration_dir = Path(__file__).parent / "calibration"
-        
+
         super().__init__(config)
         self.config = config
         self.bus = DynamixelMotorsBus(
             port=self.config.port,
             motors={
                 "shoulder_pan": Motor(1, "xl430-w250", MotorNormMode.DEGREES),
-                "shoulder_lift": Motor(2, "xl430-w250", MotorNormMode.RANGE_M100_100), 
-                "elbow_flex": Motor(3, "xl430-w250", MotorNormMode.RANGE_M100_100), 
+                "shoulder_lift": Motor(2, "xl430-w250", MotorNormMode.RANGE_M100_100),
+                "elbow_flex": Motor(3, "xl430-w250", MotorNormMode.RANGE_M100_100),
                 "wrist_flex": Motor(4, "xl330-m288", MotorNormMode.RANGE_M100_100),
-                "wrist_roll": Motor(5, "xl330-m288", MotorNormMode.DEGREES), 
+                "wrist_roll": Motor(5, "xl330-m288", MotorNormMode.DEGREES),
                 "gripper": Motor(6, "xl330-m288", MotorNormMode.RANGE_0_100),
             },
             calibration=self.calibration,
         )
+        self.bus.apply_drive_mode = True
         self.cameras = make_cameras_from_configs(config.cameras)
 
     @property
@@ -178,12 +179,6 @@ class OmxFollower(Robot):
             # release the force.
             self.bus.write("Operating_Mode", "gripper", OperatingMode.CURRENT_POSITION.value)
 
-            # Set better PID values to close the gap between recorded states and actions
-            # TODO(rcadene): Implement an automatic procedure to set optimal PID values for each motor
-            self.bus.write("Position_P_Gain", "elbow_flex", 1500)
-            self.bus.write("Position_I_Gain", "elbow_flex", 0)
-            self.bus.write("Position_D_Gain", "elbow_flex", 600)
-
     def setup_motors(self) -> None:
         for motor in reversed(self.bus.motors):
             input(f"Connect the controller board to the '{motor}' motor only and press enter.")
@@ -237,7 +232,7 @@ class OmxFollower(Robot):
 
         # Send goal position to the arm
         self.bus.sync_write("Goal_Position", goal_pos)
-        
+
         return {f"{motor}.pos": val for motor, val in goal_pos.items()}
 
     def disconnect(self):
