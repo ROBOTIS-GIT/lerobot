@@ -99,6 +99,8 @@ class OmxFollower(Robot):
         # Skip calibration and use pre-configured calibration file
         if self.calibration:
             logger.info(f"Using pre-configured calibration for {self}")
+            # Ensure EEPROM writes are permitted
+            self.bus.disable_torque()
             self.bus.write_calibration(self.calibration)
         elif not self.is_calibrated and calibrate:
             logger.info(
