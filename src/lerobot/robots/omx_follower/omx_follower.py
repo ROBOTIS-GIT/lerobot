@@ -53,12 +53,12 @@ class OmxFollower(Robot):
         self.bus = DynamixelMotorsBus(
             port=self.config.port,
             motors={
-                "shoulder_pan": Motor(1, "xl430-w250", MotorNormMode.DEGREES),
-                "shoulder_lift": Motor(2, "xl430-w250", MotorNormMode.RANGE_M100_100),
-                "elbow_flex": Motor(3, "xl430-w250", MotorNormMode.RANGE_M100_100),
-                "wrist_flex": Motor(4, "xl330-m288", MotorNormMode.RANGE_M100_100),
-                "wrist_roll": Motor(5, "xl330-m288", MotorNormMode.DEGREES),
-                "gripper": Motor(6, "xl330-m288", MotorNormMode.RANGE_0_100),
+                "shoulder_pan": Motor(11, "xl430-w250", MotorNormMode.DEGREES),
+                "shoulder_lift": Motor(12, "xl430-w250", MotorNormMode.RANGE_M100_100),
+                "elbow_flex": Motor(13, "xl430-w250", MotorNormMode.RANGE_M100_100),
+                "wrist_flex": Motor(14, "xl330-m288", MotorNormMode.RANGE_M100_100),
+                "wrist_roll": Motor(15, "xl330-m288", MotorNormMode.DEGREES),
+                "gripper": Motor(16, "xl330-m288", MotorNormMode.RANGE_0_100),
             },
             calibration=self.calibration,
         )
