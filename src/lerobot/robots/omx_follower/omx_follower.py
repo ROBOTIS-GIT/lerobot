@@ -62,7 +62,7 @@ class OmxFollower(Robot):
             },
             calibration=self.calibration,
         )
-        self.bus.apply_drive_mode = True
+        self.bus.apply_drive_mode = False
         self.cameras = make_cameras_from_configs(config.cameras)
 
     @property
@@ -165,13 +165,19 @@ class OmxFollower(Robot):
 
     def configure(self) -> None:
         with self.bus.torque_disabled():
-            self.bus.configure_motors()
+            # Apply motion profile at motor registers via bus configuration (may be overridden by mode changes)
+            # Apply motion profiles to all joints (raw units)
             # Use 'extended position mode' for all motors except gripper, because in joint mode the servos
             # can't rotate more than 360 degrees (from 0 to 4095) And some mistake can happen while assembling
             # the arm, you could end up with a servo with a position 0 or 4095 at a crucial point
             for motor in self.bus.motors:
                 if motor != "gripper":
                     self.bus.write("Operating_Mode", motor, OperatingMode.EXTENDED_POSITION.value)
+
+            # Re-apply profiles after setting operating modes to ensure registers persist
+            for motor in self.bus.motors:
+                self.bus.write("Profile_Acceleration", motor, 25, normalize=False)
+                self.bus.write("Profile_Velocity", motor, 50, normalize=False)
 
             # Use 'position control current based' for gripper to be limited by the limit of the current. For
             # the follower gripper, it means it can grasp an object without forcing too much even tho, its

@@ -58,7 +58,7 @@ class OmxLeader(Teleoperator):
             },
             calibration=self.calibration,
         )
-        self.bus.apply_drive_mode = True
+        self.bus.apply_drive_mode = False
 
     @property
     def action_features(self) -> dict[str, type]:
