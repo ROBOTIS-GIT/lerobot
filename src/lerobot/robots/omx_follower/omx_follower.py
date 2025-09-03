@@ -165,27 +165,47 @@ class OmxFollower(Robot):
 
     def configure(self) -> None:
         with self.bus.torque_disabled():
-            # Apply motion profile at motor registers via bus configuration (may be overridden by mode changes)
-            # Apply motion profiles to all joints (raw units)
-            # Use 'extended position mode' for all motors except gripper, because in joint mode the servos
-            # can't rotate more than 360 degrees (from 0 to 4095) And some mistake can happen while assembling
-            # the arm, you could end up with a servo with a position 0 or 4095 at a crucial point
-            for motor in self.bus.motors:
-                if motor != "gripper":
-                    self.bus.write("Operating_Mode", motor, OperatingMode.EXTENDED_POSITION.value)
+            # First set operating modes per joint (EEPROM area requires torque disabled)
+            # dxl11 shoulder_pan -> 4 (EXTENDED_POSITION)
+            self.bus.write("Operating_Mode", "shoulder_pan", 4, normalize=False)
+            # dxl12 shoulder_lift -> 3 (POSITION)
+            self.bus.write("Operating_Mode", "shoulder_lift", 3, normalize=False)
+            # dxl13 elbow_flex -> 3 (POSITION)
+            self.bus.write("Operating_Mode", "elbow_flex", 3, normalize=False)
+            # dxl14 wrist_flex -> 3 (POSITION)
+            self.bus.write("Operating_Mode", "wrist_flex", 3, normalize=False)
+            # dxl15 wrist_roll -> 3 (POSITION)
+            self.bus.write("Operating_Mode", "wrist_roll", 3, normalize=False)
+            # dxl16 gripper -> 5 (CURRENT_POSITION)
+            self.bus.write("Operating_Mode", "gripper", 5, normalize=False)
 
-            # Re-apply profiles after setting operating modes to ensure registers persist
+            # Common raw settings for all joints
             for motor in self.bus.motors:
-                self.bus.write("Profile_Acceleration", motor, 25, normalize=False)
+                self.bus.write("Return_Delay_Time", motor, 0, normalize=False)
+                self.bus.write("Drive_Mode", motor, 4, normalize=False)
+                self.bus.write("Position_P_Gain", motor, 1000, normalize=False)
+                self.bus.write("Position_I_Gain", motor, 0, normalize=False)
+                self.bus.write("Position_D_Gain", motor, 1000, normalize=False)
                 self.bus.write("Profile_Velocity", motor, 50, normalize=False)
+                self.bus.write("Profile_Acceleration", motor, 25, normalize=False)
 
-            # Use 'position control current based' for gripper to be limited by the limit of the current. For
-            # the follower gripper, it means it can grasp an object without forcing too much even tho, its
-            # goal position is a complete grasp (both gripper fingers are ordered to join and reach a touch).
-            # For the leader gripper, it means we can use it as a physical trigger, since we can force with
-            # our finger to make it move, and it will move back to its original target position when we
-            # release the force.
-            self.bus.write("Operating_Mode", "gripper", OperatingMode.CURRENT_POSITION.value)
+            # Joint-specific position limits
+            self.bus.write("Min_Position_Limit", "shoulder_lift", 830, normalize=False)
+            self.bus.write("Max_Position_Limit", "shoulder_lift", 3129, normalize=False)
+
+            self.bus.write("Min_Position_Limit", "elbow_flex", 1024, normalize=False)
+            self.bus.write("Max_Position_Limit", "elbow_flex", 3140, normalize=False)
+
+            self.bus.write("Min_Position_Limit", "wrist_flex", 0, normalize=False)
+            self.bus.write("Max_Position_Limit", "wrist_flex", 4095, normalize=False)
+
+            self.bus.write("Min_Position_Limit", "wrist_roll", 0, normalize=False)
+            self.bus.write("Max_Position_Limit", "wrist_roll", 4095, normalize=False)
+
+            # Gripper current control and shutdown behavior
+            self.bus.write("Current_Limit", "gripper", 600, normalize=False)
+            self.bus.write("Goal_Current", "gripper", 600, normalize=False)
+            self.bus.write("Shutdown", "gripper", 21, normalize=False)
 
     def setup_motors(self) -> None:
         for motor in reversed(self.bus.motors):

@@ -144,22 +144,27 @@ class OmxLeader(Teleoperator):
 
     def configure(self) -> None:
         self.bus.disable_torque()
-        self.bus.configure_motors()
-        for motor in self.bus.motors:
-            if motor != "gripper":
-                # Use 'extended position mode' for all motors except gripper, because in joint mode the servos
-                # can't rotate more than 360 degrees (from 0 to 4095) And some mistake can happen while
-                # assembling the arm, you could end up with a servo with a position 0 or 4095 at a crucial
-                # point
-                self.bus.write("Operating_Mode", motor, OperatingMode.EXTENDED_POSITION.value)
+        # 1) Set operating modes first (EEPROM writes require torque disabled)
+        for motor in ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"]:
+            self.bus.write("Operating_Mode", motor, OperatingMode.CURRENT.value, normalize=False)
+        self.bus.write("Operating_Mode", "gripper", OperatingMode.CURRENT_POSITION.value, normalize=False)
 
-        # Use 'position control current based' for gripper to be limited by the limit of the current.
-        # For the follower gripper, it means it can grasp an object without forcing too much even tho,
-        # its goal position is a complete grasp (both gripper fingers are ordered to join and reach a touch).
-        # For the leader gripper, it means we can use it as a physical trigger, since we can force with our finger
-        # to make it move, and it will move back to its original target position when we release the force.
-        self.bus.write("Operating_Mode", "gripper", OperatingMode.CURRENT_POSITION.value)
-        # Set gripper's goal pos in current position mode so that we can use it as a trigger.
+        # 2) Common per-joint settings
+        for motor in self.bus.motors:
+            self.bus.write("Return_Delay_Time", motor, 0, normalize=False)
+
+        # 3) Drive modes and torque
+        for motor in ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"]:
+            self.bus.write("Drive_Mode", motor, 0, normalize=False)
+            self.bus.write("Torque_Enable", motor, 1, normalize=False)
+
+        # dxl6 (gripper): Drive_Mode=1, gains and current limit
+        self.bus.write("Drive_Mode", "gripper", 0, normalize=False)
+        self.bus.write("Position_P_Gain", "gripper", 1000, normalize=False)
+        self.bus.write("Position_D_Gain", "gripper", 1500, normalize=False)
+        self.bus.write("Current_Limit", "gripper", 300, normalize=False)
+
+        # Keep gripper torque enabled for physical trigger behavior
         self.bus.enable_torque("gripper")
         if self.is_calibrated:
             self.bus.write("Goal_Position", "gripper", self.config.gripper_open_pos)
