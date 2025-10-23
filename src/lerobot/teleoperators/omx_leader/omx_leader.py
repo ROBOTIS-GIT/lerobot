@@ -82,6 +82,9 @@ class OmxLeader(Teleoperator):
             logger.info(f"Using pre-configured calibration for {self}")
             # Ensure EEPROM writes are permitted
             self.bus.disable_torque()
+            # Enforce gripper inversion via calibration so normalization flips correctly
+            if "gripper" in self.calibration:
+                self.calibration["gripper"].drive_mode = 1
             self.bus.write_calibration(self.calibration)
         elif not self.is_calibrated and calibrate:
             logger.info(
@@ -111,8 +114,8 @@ class OmxLeader(Teleoperator):
         for motor in self.bus.motors:
             self.bus.write("Operating_Mode", motor, OperatingMode.EXTENDED_POSITION.value)
 
-        # All motors have same direction for OMX
-        drive_modes = {motor: 0 for motor in self.bus.motors}
+        # All motors have same direction for OMX except gripper (invert)
+        drive_modes = {motor: (1 if motor == "gripper" else 0) for motor in self.bus.motors}
 
         input(f"Move {self} to the middle of its range of motion and press ENTER....")
         homing_offsets = self.bus.set_half_turn_homings()
@@ -156,10 +159,10 @@ class OmxLeader(Teleoperator):
         # 3) Drive modes and torque
         for motor in ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"]:
             self.bus.write("Drive_Mode", motor, 0, normalize=False)
-            self.bus.write("Torque_Enable", motor, 1, normalize=False)
+            self.bus.write("Torque_Enable", motor, 0, normalize=False)
 
         # dxl6 (gripper): Drive_Mode=1, gains and current limit
-        self.bus.write("Drive_Mode", "gripper", 0, normalize=False)
+        self.bus.write("Drive_Mode", "gripper", 1, normalize=False)
         self.bus.write("Position_P_Gain", "gripper", 1000, normalize=False)
         self.bus.write("Position_D_Gain", "gripper", 1500, normalize=False)
         self.bus.write("Current_Limit", "gripper", 300, normalize=False)
